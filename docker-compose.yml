@@ -1,0 +1,10 @@
+services:
+  mailbox-mirror:
+    image: ghcr.io/justamply/mailbox-mirror:latest
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      TZ: Europe/Berlin
+      RUN_ON_STARTUP: "true"
+      CRON_SCHEDULE: "*/5 * * * *"

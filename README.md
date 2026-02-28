@@ -9,6 +9,7 @@ Mailbox Mirror baut ein Docker-Image auf Basis von `gilleslamiral/imapsync`, das
 - `docker/run-imapsync.sh` für den eigentlichen Sync-Lauf
 - `docker/cron-runner.sh` lädt Container-Environment für Cron
 - `.github/workflows/docker-build.yml` für den CI-Build
+- `docker-compose.yml` als Compose-Beispiel
 
 ## Lokaler Build
 
@@ -23,6 +24,15 @@ docker build -t mailbox-mirror-imapsync:local .
 
 ```bash
 docker run --rm --name mailbox-mirror --env-file .env mailbox-mirror-imapsync:local
+```
+
+## Docker Compose Beispiel
+
+1. `.env.example` nach `.env` kopieren und Werte anpassen.
+2. Compose-Datei nutzen:
+
+```bash
+docker compose -f docker-compose.yml up -d
 ```
 
 ## Wichtige Environment-Variablen
@@ -42,4 +52,4 @@ Trigger:
 - Push auf `main`
 - Manueller Start (`workflow_dispatch`)
 
-Der Workflow baut das Docker-Image via Buildx (ohne Push in eine Registry).
+Der Workflow baut das Docker-Image via Buildx. Auf `main` wird zusätzlich nach GHCR (`ghcr.io/<owner>/<repo>`) gepusht; bei Pull Requests wird nur gebaut.
