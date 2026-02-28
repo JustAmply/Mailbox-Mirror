@@ -1,6 +1,6 @@
-# imapsync Docker Cron
+# Mailbox Mirror
 
-Dieses Repository baut ein Docker-Image auf Basis von `gilleslamiral/imapsync`, das `imapsync` per Cron zyklisch ausführt. Da `imapsync` standardmäßig inkrementell arbeitet, werden bei jedem Lauf nur neue/fehlende E-Mails synchronisiert.
+Mailbox Mirror baut ein Docker-Image auf Basis von `gilleslamiral/imapsync`, das `imapsync` per Cron zyklisch ausführt. Da `imapsync` standardmäßig inkrementell arbeitet, werden bei jedem Lauf nur neue/fehlende E-Mails synchronisiert.
 
 ## Was enthalten ist
 
@@ -13,7 +13,7 @@ Dieses Repository baut ein Docker-Image auf Basis von `gilleslamiral/imapsync`, 
 ## Lokaler Build
 
 ```bash
-docker build -t imapsync-docker-cron:local .
+docker build -t mailbox-mirror-imapsync:local .
 ```
 
 ## Starten des Containers
@@ -22,7 +22,7 @@ docker build -t imapsync-docker-cron:local .
 2. Container starten:
 
 ```bash
-docker run --rm --name imapsync-cron --env-file .env imapsync-docker-cron:local
+docker run --rm --name mailbox-mirror --env-file .env mailbox-mirror-imapsync:local
 ```
 
 ## Wichtige Environment-Variablen

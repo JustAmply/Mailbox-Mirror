@@ -25,6 +25,6 @@ jobs:
           context: .
           file: ./Dockerfile
           push: false
-          tags: imapsync-docker-cron:ci
+          tags: mailbox-mirror-imapsync:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
