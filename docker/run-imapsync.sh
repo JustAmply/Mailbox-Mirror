@@ -30,8 +30,6 @@ echo "running" > "${state_dir}/last_status"
 run_result="failure"
 
 on_exit() {
-  local rc=$?
-
   if [[ "$run_result" == "success" ]]; then
     date +%s > "${state_dir}/last_success_at"
     echo "success" > "${state_dir}/last_status"
@@ -88,8 +86,7 @@ if [[ -n "${FOLDER_FILTER:-}" ]]; then cmd+=(--folder "$FOLDER_FILTER"); fi
 if [[ -n "${MAXAGE_DAYS:-}" ]]; then cmd+=(--maxage "$MAXAGE_DAYS"); fi
 if [[ "${DRY_RUN:-false}" == "true" ]]; then cmd+=(--dry); fi
 if [[ -n "${IMAPSYNC_EXTRA_ARGS:-}" ]]; then
-  # shellcheck disable=SC2206
-  extra_args=( ${IMAPSYNC_EXTRA_ARGS} )
+  read -r -a extra_args <<< "${IMAPSYNC_EXTRA_ARGS}"
   cmd+=("${extra_args[@]}")
 fi
 
