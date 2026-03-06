@@ -42,7 +42,7 @@ docker compose -f docker-compose.yml up -d
 - `CRON_SCHEDULE`: Cron-Ausführungsintervall (Default: alle 5 Minuten)
 - `RUN_ON_STARTUP`: `true|false` für direkten ersten Sync beim Start
 - `DRY_RUN`: `true|false` für einen sicheren Testlauf mit `imapsync --dry`
-- `MAX_LOG_SIZE_MB`: rotiert `imapsync.log` bei Erreichen der Größe nach `imapsync.log.1`
+- `MAX_LOG_SIZE_MB`: rotiert `imapsync.log` bei Erreichen der Größe nach `imapsync.log.1` (Default: 10 MB)
 - `HEALTHCHECK_MAX_AGE_MINUTES`: optionales Alterslimit für den letzten erfolgreichen Sync
 - `IMAPSYNC_EXTRA_ARGS`: optionale zusätzliche imapsync-Argumente
 

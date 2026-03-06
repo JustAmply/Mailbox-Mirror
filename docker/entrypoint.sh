@@ -99,7 +99,7 @@ done < <(printenv)
 cat > /etc/cron.d/imapsync <<EOF
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-${cron_schedule} root /usr/local/bin/cron-runner.sh >> /var/log/imapsync.log 2>&1
+${cron_schedule} root /usr/local/bin/cron-runner.sh
 EOF
 chmod 0644 /etc/cron.d/imapsync
 
@@ -107,7 +107,7 @@ touch /var/log/imapsync.log
 
 if [[ "${RUN_ON_STARTUP:-true}" == "true" ]]; then
   log "Running initial imapsync sync..."
-  /usr/local/bin/cron-runner.sh >> /var/log/imapsync.log 2>&1 || log "Initial sync failed; cron retries based on schedule."
+  /usr/local/bin/cron-runner.sh || log "Initial sync failed; cron retries based on schedule."
 fi
 
 log "Starting cron with schedule: ${cron_schedule}"

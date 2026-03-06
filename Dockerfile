@@ -20,6 +20,6 @@ RUN chmod +x /usr/local/bin/entrypoint.sh \
 ENV CRON_SCHEDULE="*/5 * * * *"
 ENV RUN_ON_STARTUP="true"
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD ["/usr/local/bin/healthcheck.sh"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5m --retries=3 CMD ["/usr/local/bin/healthcheck.sh"]
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
