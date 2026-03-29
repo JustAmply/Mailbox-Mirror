@@ -3,10 +3,21 @@ services:
     image: ghcr.io/justamply/mailbox-mirror:latest
     container_name: mailbox-mirror-a
     restart: unless-stopped
-    env_file:
-      - .env.mailbox-a
     environment:
       TZ: Europe/Berlin
+      HOST1: ${MAILBOX_A_HOST1:-}
+      PORT1: ${MAILBOX_A_PORT1:-993}
+      USER1: ${MAILBOX_A_USER1:-}
+      PASSWORD1: ${MAILBOX_A_PASSWORD1:-}
+      SSL1: ${MAILBOX_A_SSL1:-true}
+      HOST2: ${MAILBOX_A_HOST2:-}
+      PORT2: ${MAILBOX_A_PORT2:-993}
+      USER2: ${MAILBOX_A_USER2:-}
+      PASSWORD2: ${MAILBOX_A_PASSWORD2:-}
+      SSL2: ${MAILBOX_A_SSL2:-true}
+      DRY_RUN: ${MAILBOX_A_DRY_RUN:-false}
+      MAXAGE_DAYS: ${MAILBOX_A_MAXAGE_DAYS:-}
+      IMAPSYNC_EXTRA_ARGS: ${MAILBOX_A_IMAPSYNC_EXTRA_ARGS:-}
       RUN_ON_STARTUP: "false"
       CRON_SCHEDULE: "0,15,30,45 * * * *"
       FOLDER_FILTER: INBOX
@@ -20,10 +31,21 @@ services:
     image: ghcr.io/justamply/mailbox-mirror:latest
     container_name: mailbox-mirror-b
     restart: unless-stopped
-    env_file:
-      - .env.mailbox-b
     environment:
       TZ: Europe/Berlin
+      HOST1: ${MAILBOX_B_HOST1:-}
+      PORT1: ${MAILBOX_B_PORT1:-993}
+      USER1: ${MAILBOX_B_USER1:-}
+      PASSWORD1: ${MAILBOX_B_PASSWORD1:-}
+      SSL1: ${MAILBOX_B_SSL1:-true}
+      HOST2: ${MAILBOX_B_HOST2:-}
+      PORT2: ${MAILBOX_B_PORT2:-993}
+      USER2: ${MAILBOX_B_USER2:-}
+      PASSWORD2: ${MAILBOX_B_PASSWORD2:-}
+      SSL2: ${MAILBOX_B_SSL2:-true}
+      DRY_RUN: ${MAILBOX_B_DRY_RUN:-false}
+      MAXAGE_DAYS: ${MAILBOX_B_MAXAGE_DAYS:-}
+      IMAPSYNC_EXTRA_ARGS: ${MAILBOX_B_IMAPSYNC_EXTRA_ARGS:-}
       RUN_ON_STARTUP: "false"
       CRON_SCHEDULE: "5,20,35,50 * * * *"
       FOLDER_FILTER: INBOX
@@ -37,10 +59,21 @@ services:
     image: ghcr.io/justamply/mailbox-mirror:latest
     container_name: mailbox-mirror-c
     restart: unless-stopped
-    env_file:
-      - .env.mailbox-c
     environment:
       TZ: Europe/Berlin
+      HOST1: ${MAILBOX_C_HOST1:-}
+      PORT1: ${MAILBOX_C_PORT1:-993}
+      USER1: ${MAILBOX_C_USER1:-}
+      PASSWORD1: ${MAILBOX_C_PASSWORD1:-}
+      SSL1: ${MAILBOX_C_SSL1:-true}
+      HOST2: ${MAILBOX_C_HOST2:-}
+      PORT2: ${MAILBOX_C_PORT2:-993}
+      USER2: ${MAILBOX_C_USER2:-}
+      PASSWORD2: ${MAILBOX_C_PASSWORD2:-}
+      SSL2: ${MAILBOX_C_SSL2:-true}
+      DRY_RUN: ${MAILBOX_C_DRY_RUN:-false}
+      MAXAGE_DAYS: ${MAILBOX_C_MAXAGE_DAYS:-}
+      IMAPSYNC_EXTRA_ARGS: ${MAILBOX_C_IMAPSYNC_EXTRA_ARGS:-}
       RUN_ON_STARTUP: "false"
       CRON_SCHEDULE: "10,25,40,55 * * * *"
       FOLDER_FILTER: INBOX
