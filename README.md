@@ -62,13 +62,3 @@ The advanced example keeps these defaults:
 - one shared `LOCK_FILE` volume
 
 If all three source mailboxes mirror into the same destination account, reuse the same `MAILBOX_*_HOST2`, `MAILBOX_*_USER2`, and `MAILBOX_*_PASSWORD2` values for each service.
-
-## Release Updates
-
-The base image in `Dockerfile` is pinned by digest. Dependabot watches that Docker dependency through `.github/dependabot.yml` and opens a PR when `gilleslamiral/imapsync:latest` moves to a new digest.
-
-The release flow is:
-
-1. Dependabot updates the pinned digest in `Dockerfile`.
-2. GitHub Actions builds the PR but does not push an image.
-3. After the PR is merged into `main`, the existing Docker workflow publishes the updated image to GHCR.
