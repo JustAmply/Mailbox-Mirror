@@ -15,6 +15,7 @@ Important: if your mail provider offers simple server-side forwarding to Gmail, 
 - `docker/run-imapsync.sh` for the actual sync job
 - `docker/cron-runner.sh` to load the container environment for cron
 - `.github/workflows/docker-build.yml` for the CI image build
+- `renovate.json` to detect upstream `imapsync` digest updates through Renovate
 - `docker-compose.yml` as a Compose example
 
 ## Local Build
@@ -81,6 +82,19 @@ On container startup, required variables and the cron format are validated early
 ## Operation
 
 The image includes a Docker `HEALTHCHECK`. By default, the container is considered healthy when cron is running and the last sync attempt is not marked as `failure`. With `HEALTHCHECK_MAX_AGE_MINUTES`, you can additionally require that the last successful sync is not too old.
+
+## Release Automation
+
+The base image is pinned in the `Dockerfile` as `gilleslamiral/imapsync:latest@sha256:...` instead of using an untracked mutable `latest` reference at build time.
+
+The intended release flow is:
+
+1. Upstream publishes a new `gilleslamiral/imapsync:latest` digest.
+2. Renovate detects the digest change and opens a PR updating the pinned digest in `Dockerfile`.
+3. GitHub Actions builds that PR but does not push an image.
+4. After the PR is merged into `main`, the existing Docker workflow publishes the updated image to GHCR.
+
+This keeps upstream updates reviewable while still automating detection and release preparation.
 
 ## Smoke Test
 

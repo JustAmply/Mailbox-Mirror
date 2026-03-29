@@ -1,4 +1,4 @@
-FROM gilleslamiral/imapsync:latest
+FROM gilleslamiral/imapsync:latest@sha256:161336e1a6db587bc42ea1126cfc9b6afa67ea92b408ea4c4454f7f771561aa4
 
 USER root
 

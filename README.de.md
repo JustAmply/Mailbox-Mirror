@@ -15,6 +15,7 @@ Wichtig: Wenn dein Mail-Provider eine einfache serverseitige Weiterleitung an Gm
 - `docker/run-imapsync.sh` für den eigentlichen Sync-Lauf
 - `docker/cron-runner.sh` lädt Container-Environment für Cron
 - `.github/workflows/docker-build.yml` für den CI-Build
+- `renovate.json` zur Erkennung neuer `imapsync`-Digests über Renovate
 - `docker-compose.yml` als Compose-Beispiel
 
 ## Lokaler Build
@@ -81,6 +82,19 @@ Beim Container-Start werden Pflichtvariablen und das Cron-Format früh validiert
 ## Betrieb
 
 Das Image enthält einen Docker-`HEALTHCHECK`. Standardmäßig gilt der Container als gesund, wenn Cron läuft und der letzte Sync-Versuch nicht auf `failure` steht. Mit `HEALTHCHECK_MAX_AGE_MINUTES` kannst du zusätzlich erzwingen, dass ein erfolgreicher Sync nicht zu alt sein darf.
+
+## Release-Automatisierung
+
+Das Basis-Image ist im `Dockerfile` als `gilleslamiral/imapsync:latest@sha256:...` gepinnt, statt zur Build-Zeit auf ein unversioniertes `latest` zu vertrauen.
+
+Der gedachte Release-Ablauf ist:
+
+1. Upstream veröffentlicht einen neuen Digest für `gilleslamiral/imapsync:latest`.
+2. Renovate erkennt die Digest-Änderung und öffnet einen PR, der den gepinnten Digest im `Dockerfile` aktualisiert.
+3. GitHub Actions baut diesen PR, veröffentlicht aber noch kein Image.
+4. Nach dem Merge nach `main` publiziert der bestehende Docker-Workflow das aktualisierte Image nach GHCR.
+
+So bleiben Upstream-Updates prüfbar, während Erkennung und Release-Vorbereitung automatisiert sind.
 
 ## Smoke Test
 

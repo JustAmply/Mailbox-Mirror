@@ -1,0 +1,28 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "labels": [
+    "dependencies",
+    "docker"
+  ],
+  "packageRules": [
+    {
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "gilleslamiral/imapsync"
+      ],
+      "matchUpdateTypes": [
+        "digest"
+      ],
+      "groupName": "imapsync base image",
+      "groupSlug": "imapsync-base-image",
+      "schedule": [
+        "every day"
+      ]
+    }
+  ]
+}
