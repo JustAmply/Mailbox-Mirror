@@ -1,104 +1,93 @@
 # Mailbox Mirror
 
-Mailbox Mirror baut ein Docker-Image auf Basis von `gilleslamiral/imapsync`, das `imapsync` per Cron zyklisch ausführt. Da `imapsync` standardmäßig inkrementell arbeitet, werden bei jedem Lauf nur neue/fehlende E-Mails synchronisiert.
+Mailbox Mirror builds a Docker image based on `gilleslamiral/imapsync` and runs `imapsync` on a recurring cron schedule. Since `imapsync` works incrementally by default, each run only synchronizes new or missing emails.
 
-## Wann dieses Projekt sinnvoll ist
+## When This Project Makes Sense
 
-Ein typischer Usecase ist der Wegfall von Gmailify bzw. dem POP-Abruf externer Postfächer in Gmail: Dieses Projekt kann Mails aus einem externen IMAP-Postfach fortlaufend in ein Gmail-Postfach spiegeln, damit neue Nachrichten weiterhin in Gmail ankommen.
+A typical use case is the shutdown of Gmailify or Gmail's POP fetching for external mailboxes: this project can continuously mirror emails from an external IMAP mailbox into a Gmail mailbox so new messages still arrive in Gmail.
 
-Wichtig: Wenn dein Mail-Provider eine einfache serverseitige Weiterleitung an Gmail anbietet, ist diese Lösung klar zu bevorzugen. Eine Weiterleitung ist einfacher, ressourcenschonender und robuster als ein eigener `imapsync`-Container. `Mailbox Mirror` ist vor allem dann sinnvoll, wenn keine Weiterleitung verfügbar ist oder wenn du bewusst eine selbst gehostete IMAP-zu-IMAP-Synchronisierung brauchst.
+Important: if your mail provider offers simple server-side forwarding to Gmail, that option should be preferred. Forwarding is simpler, more resource-efficient, and more robust than running your own `imapsync` container. `Mailbox Mirror` is mainly useful when forwarding is not available or when you explicitly want a self-hosted IMAP-to-IMAP sync.
 
-## Was enthalten ist
+## What's Included
 
-- `Dockerfile` auf Basis `gilleslamiral/imapsync:latest`
-- `docker/entrypoint.sh` für Cron-Setup + optionalen Initiallauf
-- `docker/run-imapsync.sh` für den eigentlichen Sync-Lauf
-- `docker/cron-runner.sh` lädt Container-Environment für Cron
-- `.github/workflows/docker-build.yml` für den CI-Build
-- `docker-compose.yml` als Compose-Beispiel
+- `Dockerfile` based on `gilleslamiral/imapsync:latest`
+- `docker/entrypoint.sh` for cron setup and an optional initial run
+- `docker/run-imapsync.sh` for the actual sync job
+- `docker/cron-runner.sh` to load the container environment for cron
+- `.github/workflows/docker-build.yml` for the CI image build
+- `docker-compose.yml` as a Compose example
 
-## Lokaler Build
+## Local Build
 
 ```bash
 docker build -t mailbox-mirror-imapsync:local .
 ```
 
-## Starten des Containers
+## Start the Container
 
-1. Variablen aus `.env.example` übernehmen und anpassen.
-2. Container starten:
+1. Copy the variables from `.env.example` and adjust them.
+2. Start the container:
 
 ```bash
 docker run --rm --name mailbox-mirror --env-file .env mailbox-mirror-imapsync:local
 ```
 
-## Docker Compose Beispiel
+## Docker Compose Example
 
-1. `.env.example` nach `.env` kopieren und Werte anpassen.
-2. Compose-Datei nutzen:
+1. Copy `.env.example` to `.env` and adjust the values.
+2. Use the Compose file:
 
 ```bash
 docker compose -f docker-compose.yml up -d
 ```
 
-## Drei Yahoo-Postfächer mit wenig RAM
+## Three Yahoo Mailboxes With Low RAM Usage
 
-Für drei Yahoo-Postfächer, die in ein Gmail-Postfach gespiegelt werden sollen, gibt es jetzt ein Compose-Beispiel mit gestaffelten Sync-Zeiten und einem gemeinsamen Lock:
+For three Yahoo mailboxes that should be mirrored into a Gmail mailbox, there is now a Compose example with staggered sync times and a shared lock:
 
-1. `.env.mailbox-a.example`, `.env.mailbox-b.example` und `.env.mailbox-c.example` jeweils nach `.env.mailbox-a`, `.env.mailbox-b` und `.env.mailbox-c` kopieren.
-2. Zugangsdaten eintragen.
-3. Multi-Mailbox-Compose starten:
+1. Copy `.env.mailbox-a.example`, `.env.mailbox-b.example`, and `.env.mailbox-c.example` to `.env.mailbox-a`, `.env.mailbox-b`, and `.env.mailbox-c`.
+2. Fill in the credentials.
+3. Start the multi-mailbox Compose stack:
 
 ```bash
 docker compose -f docker-compose.multi-mailbox.yml up -d
 ```
 
-Das Beispiel setzt:
+The example uses:
 
-- `RUN_ON_STARTUP=false`, damit ein Container-Neustart keinen dreifachen Initial-Sync auslöst
-- gestaffelte Cron-Schedules im Abstand von 5 Minuten
-- `FOLDER_FILTER=INBOX`, um nur neue Inbox-Mails zu spiegeln
-- `LOCK_FILE=/var/lock/mailbox-mirror/global.lock` auf einem gemeinsamen Docker-Volume, damit über alle drei Container hinweg immer nur ein `imapsync`-Prozess gleichzeitig läuft
+- `RUN_ON_STARTUP=false` so a container restart does not trigger a triple initial sync
+- staggered cron schedules with 5-minute offsets
+- `FOLDER_FILTER=INBOX` to mirror only new inbox mail
+- `LOCK_FILE=/var/lock/mailbox-mirror/global.lock` on a shared Docker volume so only one `imapsync` process runs across all three containers at a time
 
-Wenn du nur aktuelle Mails nachziehen willst und ältere Ordner nicht mehr regelmäßig prüfen musst, kannst du zusätzlich in den mailbox-spezifischen `.env`-Dateien `MAXAGE_DAYS=30` setzen.
+If you only want to catch up recent mail and do not need to re-check older folders regularly, you can also set `MAXAGE_DAYS=30` in the mailbox-specific `.env` files.
 
-Eine Docker-Speichergrenze wie `mem_limit: 256m` ist im Compose-Beispiel vorbereitet, sollte aber erst nach einem erfolgreichen Test ohne Limit aktiviert werden.
+A Docker memory limit like `mem_limit: 256m` is prepared in the Compose example, but it should only be enabled after a successful test run without a limit.
 
-## Wichtige Environment-Variablen
+## Important Environment Variables
 
-- `HOST1`, `USER1`, `PASSWORD1`: Quell-Postfach
-- `HOST2`, `USER2`, `PASSWORD2`: Ziel-Postfach
-- `CRON_SCHEDULE`: Cron-Ausführungsintervall (Default: alle 5 Minuten)
-- `RUN_ON_STARTUP`: `true|false` für direkten ersten Sync beim Start
-- `DRY_RUN`: `true|false` für einen sicheren Testlauf mit `imapsync --dry`
-- `LOCK_FILE`: optionaler Pfad für `flock`; mit gemeinsamem Volume können mehrere Container einen globalen Sync-Lock teilen
-- `MAX_LOG_SIZE_MB`: rotiert `imapsync.log` bei Erreichen der Größe nach `imapsync.log.1` (Default: 10 MB)
-- `HEALTHCHECK_MAX_AGE_MINUTES`: optionales Alterslimit für den letzten erfolgreichen Sync
-- `IMAPSYNC_EXTRA_ARGS`: optionale zusätzliche imapsync-Argumente
+- `HOST1`, `USER1`, `PASSWORD1`: source mailbox
+- `HOST2`, `USER2`, `PASSWORD2`: destination mailbox
+- `CRON_SCHEDULE`: cron interval for execution (default: every 5 minutes)
+- `RUN_ON_STARTUP`: `true|false` to run an immediate first sync on startup
+- `DRY_RUN`: `true|false` for a safe test run with `imapsync --dry`
+- `LOCK_FILE`: optional path for `flock`; with a shared volume, multiple containers can use one global sync lock
+- `MAX_LOG_SIZE_MB`: rotates `imapsync.log` to `imapsync.log.1` once it reaches the configured size (default: 10 MB)
+- `HEALTHCHECK_MAX_AGE_MINUTES`: optional maximum age for the last successful sync
+- `IMAPSYNC_EXTRA_ARGS`: optional additional `imapsync` arguments
 
-Beim Container-Start werden Pflichtvariablen und das Cron-Format früh validiert, damit Konfigurationsfehler sofort auffallen.
+On container startup, required variables and the cron format are validated early so configuration mistakes fail fast.
 
-## Betrieb
+## Operation
 
-Das Image enthält einen Docker-`HEALTHCHECK`. Standardmäßig gilt der Container als gesund, wenn Cron läuft und der letzte Sync-Versuch nicht auf `failure` steht. Mit `HEALTHCHECK_MAX_AGE_MINUTES` kannst du zusätzlich erzwingen, dass ein erfolgreicher Sync nicht zu alt sein darf.
+The image includes a Docker `HEALTHCHECK`. By default, the container is considered healthy when cron is running and the last sync attempt is not marked as `failure`. With `HEALTHCHECK_MAX_AGE_MINUTES`, you can additionally require that the last successful sync is not too old.
 
 ## Smoke Test
 
-Für einen sicheren Ersttest kannst du `DRY_RUN=true` setzen und den Container einmal starten:
+For a safe first test, set `DRY_RUN=true` and start the container once:
 
 ```bash
 docker run --rm --name mailbox-mirror --env-file .env -e DRY_RUN=true mailbox-mirror-imapsync:local
 ```
 
-Ein erfolgreicher Testlauf endet mit `imapsync finished successfully.` im Log, ohne dass E-Mails geschrieben werden.
-
-## GitHub Actions
-
-Workflow: `.github/workflows/docker-build.yml`
-
-Trigger:
-- Pull Requests
-- Push auf `main`
-- Manueller Start (`workflow_dispatch`)
-
-Der Workflow baut das Docker-Image via Buildx. Auf `main` wird zusätzlich nach GHCR (`ghcr.io/<owner>/<repo>`) gepusht; bei Pull Requests wird nur gebaut.
+A successful test run ends with `imapsync finished successfully.` in the log without writing any emails.
