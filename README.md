@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/logo.png" alt="Mailbox Mirror logo" width="400">
+</p>
+
 # Mailbox Mirror
 
 Mailbox Mirror runs `imapsync` on a cron schedule so one IMAP mailbox is mirrored into another. Use it when simple forwarding is not available and you want a small self-hosted sync.
