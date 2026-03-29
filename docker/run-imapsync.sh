@@ -23,7 +23,10 @@ validate_bool() {
 }
 
 state_dir="/var/lib/imapsync"
+lock_file="${LOCK_FILE:-/tmp/imapsync.lock}"
+
 mkdir -p "$state_dir"
+mkdir -p "$(dirname "$lock_file")"
 
 date +%s > "${state_dir}/last_attempt_at"
 echo "running" > "${state_dir}/last_status"
@@ -54,9 +57,9 @@ validate_bool SSL1
 validate_bool SSL2
 
 if command -v flock >/dev/null 2>&1; then
-  exec 9>/tmp/imapsync.lock
+  exec 9>"$lock_file"
   if ! flock -n 9; then
-    log "Previous imapsync run still active, skipping this cycle."
+    log "Previous imapsync run still active for lock ${lock_file}, skipping this cycle."
     run_result="skipped"
     exit 0
   fi

@@ -1,0 +1,54 @@
+services:
+  mailbox-mirror-a:
+    image: ghcr.io/justamply/mailbox-mirror:latest
+    container_name: mailbox-mirror-a
+    restart: unless-stopped
+    env_file:
+      - .env.mailbox-a
+    environment:
+      TZ: Europe/Berlin
+      RUN_ON_STARTUP: "false"
+      CRON_SCHEDULE: "0,15,30,45 * * * *"
+      FOLDER_FILTER: INBOX
+      LOCK_FILE: /var/lock/mailbox-mirror/global.lock
+    volumes:
+      - imapsync-lock:/var/lock/mailbox-mirror
+    # Enable only after validating the baseline RSS for your mailbox.
+    # mem_limit: 256m
+
+  mailbox-mirror-b:
+    image: ghcr.io/justamply/mailbox-mirror:latest
+    container_name: mailbox-mirror-b
+    restart: unless-stopped
+    env_file:
+      - .env.mailbox-b
+    environment:
+      TZ: Europe/Berlin
+      RUN_ON_STARTUP: "false"
+      CRON_SCHEDULE: "5,20,35,50 * * * *"
+      FOLDER_FILTER: INBOX
+      LOCK_FILE: /var/lock/mailbox-mirror/global.lock
+    volumes:
+      - imapsync-lock:/var/lock/mailbox-mirror
+    # Enable only after validating the baseline RSS for your mailbox.
+    # mem_limit: 256m
+
+  mailbox-mirror-c:
+    image: ghcr.io/justamply/mailbox-mirror:latest
+    container_name: mailbox-mirror-c
+    restart: unless-stopped
+    env_file:
+      - .env.mailbox-c
+    environment:
+      TZ: Europe/Berlin
+      RUN_ON_STARTUP: "false"
+      CRON_SCHEDULE: "10,25,40,55 * * * *"
+      FOLDER_FILTER: INBOX
+      LOCK_FILE: /var/lock/mailbox-mirror/global.lock
+    volumes:
+      - imapsync-lock:/var/lock/mailbox-mirror
+    # Enable only after validating the baseline RSS for your mailbox.
+    # mem_limit: 256m
+
+volumes:
+  imapsync-lock:

@@ -35,6 +35,29 @@ docker run --rm --name mailbox-mirror --env-file .env mailbox-mirror-imapsync:lo
 docker compose -f docker-compose.yml up -d
 ```
 
+## Drei Yahoo-Postfächer mit wenig RAM
+
+Für drei Yahoo-Postfächer, die in ein Gmail-Postfach gespiegelt werden sollen, gibt es jetzt ein Compose-Beispiel mit gestaffelten Sync-Zeiten und einem gemeinsamen Lock:
+
+1. `.env.mailbox-a.example`, `.env.mailbox-b.example` und `.env.mailbox-c.example` jeweils nach `.env.mailbox-a`, `.env.mailbox-b` und `.env.mailbox-c` kopieren.
+2. Zugangsdaten eintragen.
+3. Multi-Mailbox-Compose starten:
+
+```bash
+docker compose -f docker-compose.multi-mailbox.yml up -d
+```
+
+Das Beispiel setzt:
+
+- `RUN_ON_STARTUP=false`, damit ein Container-Neustart keinen dreifachen Initial-Sync auslöst
+- gestaffelte Cron-Schedules im Abstand von 5 Minuten
+- `FOLDER_FILTER=INBOX`, um nur neue Inbox-Mails zu spiegeln
+- `LOCK_FILE=/var/lock/mailbox-mirror/global.lock` auf einem gemeinsamen Docker-Volume, damit über alle drei Container hinweg immer nur ein `imapsync`-Prozess gleichzeitig läuft
+
+Wenn du nur aktuelle Mails nachziehen willst und ältere Ordner nicht mehr regelmäßig prüfen musst, kannst du zusätzlich in den mailbox-spezifischen `.env`-Dateien `MAXAGE_DAYS=30` setzen.
+
+Eine Docker-Speichergrenze wie `mem_limit: 256m` ist im Compose-Beispiel vorbereitet, sollte aber erst nach einem erfolgreichen Test ohne Limit aktiviert werden.
+
 ## Wichtige Environment-Variablen
 
 - `HOST1`, `USER1`, `PASSWORD1`: Quell-Postfach
@@ -42,6 +65,7 @@ docker compose -f docker-compose.yml up -d
 - `CRON_SCHEDULE`: Cron-Ausführungsintervall (Default: alle 5 Minuten)
 - `RUN_ON_STARTUP`: `true|false` für direkten ersten Sync beim Start
 - `DRY_RUN`: `true|false` für einen sicheren Testlauf mit `imapsync --dry`
+- `LOCK_FILE`: optionaler Pfad für `flock`; mit gemeinsamem Volume können mehrere Container einen globalen Sync-Lock teilen
 - `MAX_LOG_SIZE_MB`: rotiert `imapsync.log` bei Erreichen der Größe nach `imapsync.log.1` (Default: 10 MB)
 - `HEALTHCHECK_MAX_AGE_MINUTES`: optionales Alterslimit für den letzten erfolgreichen Sync
 - `IMAPSYNC_EXTRA_ARGS`: optionale zusätzliche imapsync-Argumente
