@@ -2,6 +2,12 @@
 
 Mailbox Mirror baut ein Docker-Image auf Basis von `gilleslamiral/imapsync`, das `imapsync` per Cron zyklisch ausführt. Da `imapsync` standardmäßig inkrementell arbeitet, werden bei jedem Lauf nur neue/fehlende E-Mails synchronisiert.
 
+## Wann dieses Projekt sinnvoll ist
+
+Ein typischer Usecase ist der Wegfall von Gmailify bzw. dem POP-Abruf externer Postfächer in Gmail: Dieses Projekt kann Mails aus einem externen IMAP-Postfach fortlaufend in ein Gmail-Postfach spiegeln, damit neue Nachrichten weiterhin in Gmail ankommen.
+
+Wichtig: Wenn dein Mail-Provider eine einfache serverseitige Weiterleitung an Gmail anbietet, ist diese Lösung klar zu bevorzugen. Eine Weiterleitung ist einfacher, ressourcenschonender und robuster als ein eigener `imapsync`-Container. `Mailbox Mirror` ist vor allem dann sinnvoll, wenn keine Weiterleitung verfügbar ist oder wenn du bewusst eine selbst gehostete IMAP-zu-IMAP-Synchronisierung brauchst.
+
 ## Was enthalten ist
 
 - `Dockerfile` auf Basis `gilleslamiral/imapsync:latest`
