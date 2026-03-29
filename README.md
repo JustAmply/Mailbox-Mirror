@@ -4,6 +4,14 @@ Mailbox Mirror runs `imapsync` on a cron schedule so one IMAP mailbox is mirrore
 
 If your provider supports server-side forwarding, use that instead. It is simpler and usually more reliable than running your own sync container.
 
+## Project Background
+
+This project started as a practical response to a very specific failure mode in the modern email stack: Gmail is shutting down Gmailify and POP-based fetching for external accounts, while Yahoo keeps simple forwarding behind tighter restrictions on the free tier. That combination removes the two obvious low-effort ways to keep third-party mail flowing into Gmail.
+
+I wanted a replacement that was boring in the good sense: self-hosted, inspectable, cheap to run, and based on proven IMAP behavior instead of another opaque mail bridge. The result is `Mailbox Mirror`: a small wrapper around `imapsync` that turns a one-off migration tool into a dependable recurring sync job.
+
+The core idea is straightforward but intentional. If forwarding is available, forwarding is still the smarter choice and should be preferred. But when Gmailify disappears, POP fetching goes away, and Yahoo will not forward for free, a scheduled IMAP-to-IMAP mirror is a clean fallback that keeps control on your side without inventing a custom mail system from scratch.
+
 ## Quick Start
 
 1. Copy `.env.example` to `.env`.
