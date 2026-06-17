@@ -5,14 +5,6 @@ log() {
   echo "[$(date -Iseconds)] $*"
 }
 
-require_env() {
-  local var_name="$1"
-  if [[ -z "${!var_name:-}" ]]; then
-    log "Missing required env var: ${var_name}"
-    exit 1
-  fi
-}
-
 validate_bool() {
   local var_name="$1"
   local value="${!var_name:-}"
@@ -67,17 +59,10 @@ validate_cron_schedule() {
 cron_schedule="${CRON_SCHEDULE:-*/5 * * * *}"
 state_dir="/var/lib/imapsync"
 
-require_env HOST1
-require_env USER1
-require_env PASSWORD1
-require_env HOST2
-require_env USER2
-require_env PASSWORD2
+source /usr/local/lib/mailbox-mirror/mailbox-run.sh
 
 validate_bool RUN_ON_STARTUP
-validate_bool DRY_RUN
-validate_bool SSL1
-validate_bool SSL2
+mailbox_run_validate_env
 validate_positive_int MAX_LOG_SIZE_MB
 validate_positive_int HEALTHCHECK_MAX_AGE_MINUTES
 validate_cron_schedule "$cron_schedule"

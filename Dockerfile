@@ -4,12 +4,14 @@ USER root
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends cron ca-certificates tzdata \
+    && mkdir -p /usr/local/lib/mailbox-mirror \
     && rm -rf /var/lib/apt/lists/*
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 COPY docker/run-imapsync.sh /usr/local/bin/run-imapsync.sh
 COPY docker/cron-runner.sh /usr/local/bin/cron-runner.sh
 COPY docker/healthcheck.sh /usr/local/bin/healthcheck.sh
+COPY docker/mailbox-run.sh /usr/local/lib/mailbox-mirror/mailbox-run.sh
 
 RUN chmod +x /usr/local/bin/entrypoint.sh \
     /usr/local/bin/run-imapsync.sh \
