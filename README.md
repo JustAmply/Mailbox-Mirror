@@ -84,3 +84,10 @@ bash tests/test.sh
 ```
 
 The checks validate shell syntax, the generated `imapsync` command, required configuration errors, and whether the default Compose file preserves documented `.env` overrides. They do not connect to an IMAP server.
+
+To validate the built container lifecycle without connecting to an IMAP server:
+
+```bash
+docker build --tag mailbox-mirror:smoke-test .
+bash tests/container-smoke-test.sh
+```
