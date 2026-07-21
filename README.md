@@ -74,3 +74,13 @@ The advanced example keeps these defaults:
 - one shared `LOCK_FILE` volume
 
 If all three source mailboxes mirror into the same destination account, reuse the same `MAILBOX_*_HOST2`, `MAILBOX_*_USER2`, and `MAILBOX_*_PASSWORD2` values for each service.
+
+## Development Checks
+
+Run the fast contract checks with Bash and the Docker Compose plugin installed:
+
+```bash
+bash tests/test.sh
+```
+
+The checks validate shell syntax, the generated `imapsync` command, required configuration errors, and whether the default Compose file preserves documented `.env` overrides. They do not connect to an IMAP server.

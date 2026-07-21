@@ -23,8 +23,8 @@ jobs:
       - name: Set image name
         run: echo "IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
 
-      - name: Test mailbox run contract
-        run: bash tests/mailbox-run-test.sh
+      - name: Test repository contracts
+        run: bash tests/test.sh
 
       - name: Log in to GHCR
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
