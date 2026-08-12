@@ -85,7 +85,7 @@ Run the fast contract checks with Bash and the Docker Compose plugin installed:
 bash tests/test.sh
 ```
 
-The checks validate shell syntax, runtime configuration, Sync Job state, the generated `imapsync` command, and documented Compose mappings and overrides. They do not connect to an IMAP server.
+The checks validate shell syntax, runtime configuration, Sync Job state, complete Mailbox Run outcomes through a fake Imapsync Adapter, and documented Compose mappings and overrides. They do not connect to an IMAP server.
 
 To validate the built container lifecycle without connecting to an IMAP server:
 

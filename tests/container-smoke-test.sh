@@ -63,6 +63,16 @@ docker exec "$container_name" \
   grep -Fq '@hourly root /usr/local/bin/cron-runner.sh' /etc/cron.d/imapsync \
   || fail "entrypoint did not install the configured cron schedule"
 
+docker exec "$container_name" mkdir -p /tmp/fake-imapsync-bin
+docker exec "$container_name" ln -s /bin/true /tmp/fake-imapsync-bin/imapsync
+docker exec \
+  --env PATH=/tmp/fake-imapsync-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin \
+  "$container_name" \
+  /usr/local/bin/run-imapsync.sh >/dev/null \
+  || fail "installed mailbox run failed with the fake imapsync adapter"
+docker exec "$container_name" /usr/local/bin/healthcheck.sh \
+  || fail "container became unhealthy after a successful mailbox run"
+
 docker stop --time 5 "$container_name" >/dev/null \
   || fail "container did not stop within five seconds"
 
