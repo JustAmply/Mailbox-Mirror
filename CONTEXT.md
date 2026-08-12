@@ -31,3 +31,7 @@ _Avoid_: custom IMAP implementation
 **Runtime Configuration**:
 The validated settings that control Mailbox Mirror, its Sync Job, and its Mailbox Runs.
 _Avoid_: raw environment
+
+**Sync Job State**:
+The recorded lifecycle and latest Mailbox Run result used to assess whether a Sync Job is healthy.
+_Avoid_: health files, imapsync state

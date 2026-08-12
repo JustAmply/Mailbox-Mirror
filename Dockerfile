@@ -13,6 +13,7 @@ COPY docker/cron-runner.sh /usr/local/bin/cron-runner.sh
 COPY docker/healthcheck.sh /usr/local/bin/healthcheck.sh
 COPY docker/config.sh /usr/local/lib/mailbox-mirror/config.sh
 COPY docker/mailbox-run.sh /usr/local/lib/mailbox-mirror/mailbox-run.sh
+COPY docker/sync-job-state.sh /usr/local/lib/mailbox-mirror/sync-job-state.sh
 
 RUN chmod +x /usr/local/bin/entrypoint.sh \
     /usr/local/bin/run-imapsync.sh \

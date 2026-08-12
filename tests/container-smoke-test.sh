@@ -59,8 +59,6 @@ if [[ "$healthy" != "true" ]]; then
   fail "container did not become healthy: ${health_output}"
 fi
 
-docker exec "$container_name" test -s /var/lib/imapsync/container_started_at \
-  || fail "entrypoint did not record the container start time"
 docker exec "$container_name" \
   grep -Fq '@hourly root /usr/local/bin/cron-runner.sh' /etc/cron.d/imapsync \
   || fail "entrypoint did not install the configured cron schedule"

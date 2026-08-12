@@ -5,9 +5,8 @@ log() {
   echo "[$(date -Iseconds)] $*"
 }
 
-state_dir="/var/lib/imapsync"
-
 source /usr/local/lib/mailbox-mirror/config.sh
+source /usr/local/lib/mailbox-mirror/sync-job-state.sh
 
 mailbox_mirror_config_load
 cron_schedule="$CRON_SCHEDULE"
@@ -17,8 +16,7 @@ if [[ -n "${TZ:-}" && -f "/usr/share/zoneinfo/${TZ}" ]]; then
   echo "${TZ}" > /etc/timezone
 fi
 
-mkdir -p "$state_dir"
-date +%s > "${state_dir}/container_started_at"
+sync_job_state_record_container_started
 
 # Snapshot runtime env so cron jobs can read the same credentials/options.
 : > /etc/imapsync.env
@@ -43,7 +41,7 @@ fi
 log "Starting cron with schedule: ${cron_schedule}"
 cron -f &
 cron_pid=$!
-echo "${cron_pid}" > /var/run/mailbox-mirror-cron.pid
+sync_job_state_record_cron_started "$cron_pid"
 
 tail -F /var/log/imapsync.log &
 tail_pid=$!

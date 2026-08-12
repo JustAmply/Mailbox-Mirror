@@ -7,30 +7,21 @@ log() {
 
 source /usr/local/lib/mailbox-mirror/config.sh
 source /usr/local/lib/mailbox-mirror/mailbox-run.sh
+source /usr/local/lib/mailbox-mirror/sync-job-state.sh
 
-state_dir="/var/lib/imapsync"
 lock_file="${LOCK_FILE:-/tmp/imapsync.lock}"
 
-mkdir -p "$state_dir"
 mkdir -p "$(dirname "$lock_file")"
 
-date +%s > "${state_dir}/last_attempt_at"
-echo "running" > "${state_dir}/last_status"
 run_result="failure"
 
 on_exit() {
-  if [[ "$run_result" == "success" ]]; then
-    date +%s > "${state_dir}/last_success_at"
-    echo "success" > "${state_dir}/last_status"
-  elif [[ "$run_result" == "skipped" ]]; then
-    echo "skipped" > "${state_dir}/last_status"
-  else
-    echo "failure" > "${state_dir}/last_status"
-  fi
+  sync_job_state_record_mailbox_run_finished "$run_result"
 }
 trap on_exit EXIT
 
 mailbox_mirror_config_load
+sync_job_state_record_mailbox_run_started
 
 if command -v flock >/dev/null 2>&1; then
   exec 9>"$lock_file"
