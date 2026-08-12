@@ -1,61 +1,7 @@
 #!/usr/bin/env bash
 
-mailbox_run_required_vars=(
-  HOST1
-  USER1
-  PASSWORD1
-  HOST2
-  USER2
-  PASSWORD2
-)
-
-mailbox_run_error() {
-  if declare -F log >/dev/null; then
-    log "$*" >&2
-  else
-    echo "$*" >&2
-  fi
-}
-
-mailbox_run_require_env() {
-  local var_name="$1"
-  if [[ -z "${!var_name:-}" ]]; then
-    mailbox_run_error "Missing required env var: ${var_name}"
-    return 1
-  fi
-}
-
-mailbox_run_validate_bool() {
-  local var_name="$1"
-  local value="${!var_name:-}"
-
-  if [[ -z "$value" ]]; then
-    return 0
-  fi
-
-  case "$value" in
-    true|false) ;;
-    *)
-      mailbox_run_error "Invalid boolean value for ${var_name}: ${value} (expected true or false)"
-      return 1
-      ;;
-  esac
-}
-
-mailbox_run_validate_env() {
-  local var_name
-
-  for var_name in "${mailbox_run_required_vars[@]}"; do
-    mailbox_run_require_env "$var_name" || return 1
-  done
-
-  mailbox_run_validate_bool DRY_RUN || return 1
-  mailbox_run_validate_bool SSL1 || return 1
-  mailbox_run_validate_bool SSL2 || return 1
-}
-
 mailbox_run_is_dry_run() {
-  [[ "${DRY_RUN:-false}" == "true" ]]
+  [[ "$DRY_RUN" == "true" ]]
 }
 
 mailbox_run_build_command() {

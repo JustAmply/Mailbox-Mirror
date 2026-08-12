@@ -6,5 +6,3 @@ services:
       - .env
     environment:
       TZ: ${TZ:-Europe/Berlin}
-      RUN_ON_STARTUP: ${RUN_ON_STARTUP:-true}
-      CRON_SCHEDULE: ${CRON_SCHEDULE:-*/5 * * * *}

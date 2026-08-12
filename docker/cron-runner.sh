@@ -2,7 +2,12 @@
 set -euo pipefail
 
 log_file="/var/log/imapsync.log"
-max_log_size_mb="${MAX_LOG_SIZE_MB:-10}"
+
+source /etc/imapsync.env
+source /usr/local/lib/mailbox-mirror/config.sh
+mailbox_mirror_config_load
+
+max_log_size_mb="$MAX_LOG_SIZE_MB"
 
 if [[ -f "$log_file" ]]; then
   current_size_bytes=$(wc -c < "$log_file")
@@ -15,5 +20,4 @@ fi
 touch "$log_file"
 exec >> "$log_file" 2>&1
 
-source /etc/imapsync.env
 exec /usr/local/bin/run-imapsync.sh

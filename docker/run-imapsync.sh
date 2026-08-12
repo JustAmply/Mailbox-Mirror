@@ -5,6 +5,7 @@ log() {
   echo "[$(date -Iseconds)] $*"
 }
 
+source /usr/local/lib/mailbox-mirror/config.sh
 source /usr/local/lib/mailbox-mirror/mailbox-run.sh
 
 state_dir="/var/lib/imapsync"
@@ -29,7 +30,7 @@ on_exit() {
 }
 trap on_exit EXIT
 
-mailbox_run_validate_env
+mailbox_mirror_config_load
 
 if command -v flock >/dev/null 2>&1; then
   exec 9>"$lock_file"

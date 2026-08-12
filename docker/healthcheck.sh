@@ -3,6 +3,10 @@ set -euo pipefail
 
 state_dir="/var/lib/imapsync"
 pid_file="/var/run/mailbox-mirror-cron.pid"
+
+source /usr/local/lib/mailbox-mirror/config.sh
+mailbox_mirror_config_load
+
 max_age_minutes="${HEALTHCHECK_MAX_AGE_MINUTES:-}"
 
 if [[ ! -f "$pid_file" ]]; then
@@ -25,11 +29,6 @@ if [[ -f "${state_dir}/last_status" ]]; then
 fi
 
 if [[ -n "$max_age_minutes" ]]; then
-  if [[ ! "$max_age_minutes" =~ ^[0-9]+$ ]] || (( max_age_minutes < 1 )); then
-    echo "Invalid HEALTHCHECK_MAX_AGE_MINUTES: ${max_age_minutes}" >&2
-    exit 1
-  fi
-
   if [[ ! -f "${state_dir}/last_success_at" ]]; then
     echo "No successful imapsync run recorded yet" >&2
     exit 1

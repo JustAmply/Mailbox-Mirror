@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/docker/mailbox-run.sh"
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${repo_root}/docker/config.sh"
+source "${repo_root}/docker/mailbox-run.sh"
 
 fail() {
   echo "not ok - $*" >&2
@@ -44,7 +46,7 @@ test_minimal_command_uses_default_ssl() {
   reset_env
   set_required_env
 
-  mailbox_run_validate_env
+  mailbox_mirror_config_load
   local cmd
   mailbox_run_build_command cmd
 
@@ -69,7 +71,7 @@ test_optional_args_append_in_order() {
   DRY_RUN=true
   IMAPSYNC_EXTRA_ARGS="--delete2 --expunge2"
 
-  mailbox_run_validate_env
+  mailbox_mirror_config_load
   local cmd
   mailbox_run_build_command cmd
 
@@ -80,35 +82,7 @@ test_optional_args_append_in_order() {
   assert_equal "$expected" "$actual" "optional command"
 }
 
-test_missing_required_env_fails() {
-  reset_env
-  set_required_env
-  unset PASSWORD2
-
-  local output
-  if output="$(mailbox_run_validate_env 2>&1)"; then
-    fail "missing required env should fail"
-  fi
-
-  assert_equal "Missing required env var: PASSWORD2" "$output" "missing env message"
-}
-
-test_invalid_bool_fails() {
-  reset_env
-  set_required_env
-  DRY_RUN=yes
-
-  local output
-  if output="$(mailbox_run_validate_env 2>&1)"; then
-    fail "invalid bool should fail"
-  fi
-
-  assert_equal "Invalid boolean value for DRY_RUN: yes (expected true or false)" "$output" "invalid bool message"
-}
-
 test_minimal_command_uses_default_ssl
 test_optional_args_append_in_order
-test_missing_required_env_fails
-test_invalid_bool_fails
 
 echo "ok - mailbox-run contract"

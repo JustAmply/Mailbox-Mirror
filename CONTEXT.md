@@ -27,3 +27,7 @@ _Avoid_: cron job, runner
 **Imapsync Adapter**:
 The `imapsync` command-line integration used to perform a mailbox run.
 _Avoid_: custom IMAP implementation
+
+**Runtime Configuration**:
+The validated settings that control Mailbox Mirror, its Sync Job, and its Mailbox Runs.
+_Avoid_: raw environment

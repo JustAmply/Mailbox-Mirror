@@ -47,12 +47,14 @@ Common optional values:
 Advanced-only values:
 
 - `LOCK_FILE` to share one lock across multiple containers
+- `AUTHMECH1`, `AUTHMECH2` to force an authentication mechanism
 - `FOLDER_FILTER` to sync only selected folders such as `INBOX`
 - `MAXAGE_DAYS` to limit how much old mail is scanned
 - `HEALTHCHECK_MAX_AGE_MINUTES` to fail health checks when sync is too old
 - `IMAPSYNC_EXTRA_ARGS` for extra `imapsync` flags
+- `MAX_LOG_SIZE_MB` to limit the active log file before rotation
 
-The container validates required variables and the cron schedule on startup, so bad config fails fast.
+The container validates the documented runtime configuration on startup and before every mailbox run, so bad config fails fast.
 
 ## Advanced Example
 
@@ -83,7 +85,7 @@ Run the fast contract checks with Bash and the Docker Compose plugin installed:
 bash tests/test.sh
 ```
 
-The checks validate shell syntax, the generated `imapsync` command, required configuration errors, and whether the default Compose file preserves documented `.env` overrides. They do not connect to an IMAP server.
+The checks validate shell syntax, runtime configuration, the generated `imapsync` command, and documented Compose mappings and overrides. They do not connect to an IMAP server.
 
 To validate the built container lifecycle without connecting to an IMAP server:
 

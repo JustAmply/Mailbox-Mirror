@@ -26,6 +26,8 @@ USER2=destination@example.test
 PASSWORD2=destination-password
 RUN_ON_STARTUP=false
 CRON_SCHEDULE=17 3 * * *
+MAILBOX_A_AUTHMECH1=LOGIN
+MAILBOX_A_AUTHMECH2=PLAIN
 EOF
 
 compose_config="$(docker compose --project-directory "$fixture_dir" config --format json)"
@@ -35,9 +37,14 @@ compose_config="$(docker compose --project-directory "$fixture_dir" config --for
 [[ "$compose_config" == *'"CRON_SCHEDULE": "17 3 * * *"'* ]] \
   || fail "docker-compose.yml must preserve CRON_SCHEDULE from .env"
 
-docker compose \
+multi_compose_config="$(docker compose \
   --project-directory "$fixture_dir" \
   --file "${fixture_dir}/docker-compose.multi-mailbox.yml" \
-  config --format json >/dev/null
+  config --format json)"
+
+[[ "$multi_compose_config" == *'"AUTHMECH1": "LOGIN"'* ]] \
+  || fail "docker-compose.multi-mailbox.yml must map MAILBOX_A_AUTHMECH1"
+[[ "$multi_compose_config" == *'"AUTHMECH2": "PLAIN"'* ]] \
+  || fail "docker-compose.multi-mailbox.yml must map MAILBOX_A_AUTHMECH2"
 
 echo "ok - Compose configuration contracts"
