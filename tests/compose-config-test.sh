@@ -89,4 +89,35 @@ done
 [[ "$compose_config" == *'"WEBHOOK_URL": "https://monitor.example.test/single"'* && "$compose_config" == *'"WEBHOOK_FAILURE_THRESHOLD": "4"'* ]] || fail "single webhook overrides lost"
 [[ "$multi_compose_config" == *'"WEBHOOK_URL": "https://monitor.example.test/a"'* && "$multi_compose_config" == *'"WEBHOOK_FAILURE_THRESHOLD": "5"'* ]] || fail "multi webhook overrides lost"
 [[ "$compose_config" == *'"stop_grace_period": "30s"'* && "$multi_compose_config" == *'"stop_grace_period": "30s"'* ]] || fail "shutdown grace period lost"
+# Exercise the actual onboarding templates, including Compose's file selection.
+example_dir="${fixture_dir}/examples"
+mkdir -p "$example_dir"
+cp "${repo_root}/docker-compose.yml" "${repo_root}/docker-compose.multi-mailbox.yml" "$example_dir/"
+cp "${repo_root}/.env.example" "${example_dir}/.env"
+cat >> "${example_dir}/.env" <<'EOF'
+PASSWORD1='fake $literal #password'
+EOF
+example_config="$(docker compose --project-directory "$example_dir" config --format json)"
+[[ "$example_config" == *'"mailbox-mirror": {'* && "$example_config" == *'"HOST1": "imap.source.example"'* ]] \
+  || fail "single mailbox template does not configure the default service"
+# Compose doubles dollars in its serialized configuration; the password stays literal.
+[[ "$example_config" == *'"PASSWORD1": "fake $$literal #password"'* ]] \
+  || fail "quoted example passwords must preserve dollar signs and hashes"
+(
+  set -a
+  source "${example_dir}/.env"
+  source "${repo_root}/docker/config.sh"
+  mailbox_mirror_config_load
+) || fail "minimal single mailbox template must pass runtime validation"
+
+cp "${repo_root}/.env.multi-mailbox.example" "${example_dir}/.env"
+example_services="$(docker compose --project-directory "$example_dir" config --services)"
+[[ "$example_services" == *mailbox-mirror-a* && "$example_services" == *mailbox-mirror-b* && "$example_services" == *mailbox-mirror-c* ]] \
+  || fail "multi-mailbox template must select its Compose file without -f"
+[[ "$example_services" != *$'mailbox-mirror\n'* && "$example_services" != mailbox-mirror ]] \
+  || fail "multi-mailbox template must not select the single mailbox service"
+example_config="$(docker compose --project-directory "$example_dir" config --format json)"
+[[ "$example_config" == *'"USER1": "source-a@example.com"'* && "$example_config" == *'"FOLDER_FILTER": "INBOX"'* && "$example_config" == *'"RUN_ON_STARTUP": "false"'* ]] \
+  || fail "multi-mailbox template must preserve mailbox mapping and existing defaults"
+
 echo "ok - Compose configuration contracts"
