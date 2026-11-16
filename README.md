@@ -120,9 +120,9 @@ on first container startup. An actual failed run is unhealthy immediately. Succe
 dry runs update a separate timestamp and never count as actual synchronization;
 in `DRY_RUN=true` health checks assess the dry-run timestamp instead.
 
-`RUN_TIMEOUT_SECONDS` optionally terminates an overlong run (exit 124, or 137 after
+`RUN_TIMEOUT_SECONDS` optionally terminates an overlong adapter execution (exit 124, or 137 after
 forced termination). The default has no total runtime limit. `SHUTDOWN_GRACE_SECONDS`
-(default 10) gives the adapter time to stop before forced termination. Set Compose
+(default 10) gives the adapter time to stop before forced termination. The supplied Compose files allow 30 seconds for shutdown. Set Compose
 `stop_grace_period` longer than this value plus five seconds if you increase it.
 Shutdown also handles an initial sync that is still running.
 
@@ -188,3 +188,48 @@ destination server's folder separator.
 The multi-mailbox example exposes the same settings with `MAILBOX_A_` / `B_` /
 `C_`. It retains its `INBOX` filter by default; set `MAILBOX_A_FOLDER_FILTER=`
 explicitly when selecting other folders or all folders.
+
+## Optional notifications
+
+Set `WEBHOOK_URL` to an HTTP(S) endpoint accepting JSON POST requests. No message
+is sent unless you configure an endpoint. `WEBHOOK_FAILURE_THRESHOLD` defaults
+to 3 consecutive failed mailbox runs. Configure `HEALTHCHECK_MAX_AGE_MINUTES`
+to also alert on missing progress, including repeated lock skips, and optionally
+`HEALTHCHECK_MAX_RUN_MINUTES` for overlong runs. Each mailbox in the multi-mailbox
+example has its own `MAILBOX_A_WEBHOOK_URL` and threshold (likewise B/C); use
+distinct endpoint paths when the receiver needs to distinguish mailboxes.
+
+A separate monitor checks every 30 seconds, including during the initial sync.
+It sends one `event=alert` per incident and one `event=recovery` after a successful
+run clears it. Reasons are `failure`, `stale`, or `run_timeout`. Failed deliveries
+are retried on the next check; a lost HTTP acknowledgment can cause a duplicate,
+so receivers should handle repeated events. Payloads contain operational status,
+counts and timestamps, never passwords, mailbox addresses or the webhook URL.
+This is a generic JSON endpoint, not a provider-specific Slack/Discord payload.
+
+The monitor is independent of the Docker healthcheck and sync execution: a slow
+or unavailable receiver does not turn a successful sync into a failure. Each
+request has a ten-second deadline. Notification state is retained only as long
+as the sync state directory is retained.
+
+## Integration checks
+
+After building `mailbox-mirror:smoke-test`, also run:
+
+```bash
+bash tests/runtime-container-test.sh
+bash tests/webhook-container-test.sh
+bash tests/imap-integration-test.sh
+```
+
+The runtime suite uses a fake adapter with `--network none` to test timeouts,
+lock contention and shutdown, including startup races. The IMAP suite builds two
+disposable Dovecot servers on an internal Docker network with no published ports,
+fake credentials and synthetic messages. It checks real contents, flags, dates,
+folder routing, deletion modes, upgrades from UID-only matching and interrupted
+transfer recovery. Images/package downloads need network access during the build;
+the actual mail tests have no external network access. No real mailbox is used.
+
+GitHub Actions runs contracts, image build, lifecycle, runtime, webhook and IMAP tests on
+pull requests, `main`, and `codex/**` pushes. Image publication remains limited to
+`main`; feature-branch checks do not publish or replace the `latest` image.

@@ -13,19 +13,6 @@ _mailbox_run_log() {
   fi
 }
 
-_mailbox_run_is_dry_run() {
-  local dry="${DRY_RUN:-false}" arg
-  local -a extra_args=()
-  read -r -a extra_args <<< "${IMAPSYNC_EXTRA_ARGS:-}"
-  for arg in "${extra_args[@]}"; do
-    case "$arg" in
-      --dry) dry=true ;;
-      --nodry) dry=false ;;
-    esac
-  done
-  [[ "$dry" == true ]]
-}
-
 _mailbox_run_build_command() {
   local -n mailbox_run_command_ref="$1"
   mailbox_run_command_ref=(
@@ -49,7 +36,7 @@ _mailbox_run_build_command() {
   if [[ -n "${AUTHMECH2:-}" ]]; then mailbox_run_command_ref+=(--authmech2 "$AUTHMECH2"); fi
   if [[ -n "${FOLDER_FILTER:-}" ]]; then mailbox_run_command_ref+=(--folder "$FOLDER_FILTER"); fi
   if [[ -n "${MAXAGE_DAYS:-}" ]]; then mailbox_run_command_ref+=(--maxage "$MAXAGE_DAYS"); fi
-  if _mailbox_run_is_dry_run; then mailbox_run_command_ref+=(--dry); fi
+  if sync_job_state_is_dry_run; then mailbox_run_command_ref+=(--dry); fi
   mailbox_folder_options_append "$1"
   if [[ -n "${IMAPSYNC_EXTRA_ARGS:-}" ]]; then
     local extra_args
@@ -86,13 +73,13 @@ mailbox_run_execute() (
       wait "$lock_wait_pid" 2>/dev/null || true
     fi
     if [[ -n "$adapter_pid" ]]; then
-      kill -TERM -- "-$adapter_pid" 2>/dev/null || true
+      kill -TERM -- "-$adapter_pid" 2>/dev/null || kill -TERM "$adapter_pid" 2>/dev/null || true
       local remaining=$((10#${SHUTDOWN_GRACE_SECONDS:-10}))
       while kill -0 -- "-$adapter_pid" 2>/dev/null && (( remaining > 0 )); do
         sleep 1
         remaining=$((remaining - 1))
       done
-      kill -KILL -- "-$adapter_pid" 2>/dev/null || true
+      kill -KILL -- "-$adapter_pid" 2>/dev/null || kill -KILL "$adapter_pid" 2>/dev/null || true
       wait "$adapter_pid" 2>/dev/null || true
     fi
     adapter_exit=143
@@ -130,7 +117,7 @@ mailbox_run_execute() (
   fi
   _mailbox_run_build_command cmd
 
-  if _mailbox_run_is_dry_run; then
+  if sync_job_state_is_dry_run; then
     _mailbox_run_log "Starting imapsync in dry-run mode..."
   else
     _mailbox_run_log "Starting imapsync..."
@@ -145,7 +132,7 @@ mailbox_run_execute() (
   if wait "$adapter_pid"; then
     adapter_exit=0
     run_result="success"
-    if _mailbox_run_is_dry_run; then run_result="dry_run"; fi
+    if sync_job_state_is_dry_run; then run_result="dry_run"; fi
     _mailbox_run_log "imapsync finished successfully."
     return 0
   else

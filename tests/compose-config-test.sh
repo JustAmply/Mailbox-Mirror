@@ -47,6 +47,10 @@ MAILBOX_A_DESTINATION_PREFIX=Source/
 MAILBOX_A_SYNC_MODE=mirror
 MAILBOX_A_ALLOW_DELETIONS=true
 MAILBOX_A_FOLDER_FILTER=
+WEBHOOK_URL=https://monitor.example.test/single
+WEBHOOK_FAILURE_THRESHOLD=4
+MAILBOX_A_WEBHOOK_URL=https://monitor.example.test/a
+MAILBOX_A_WEBHOOK_FAILURE_THRESHOLD=5
 MAILBOX_A_AUTHMECH1=LOGIN
 MAILBOX_A_AUTHMECH2=PLAIN
 EOF
@@ -82,4 +86,7 @@ done
 for entry in '"FOLDER_INCLUDE": "Sent Items"' '"FOLDER_EXCLUDE": "^Spam$$"' '"FOLDER_MAP": "Sent Items=Archive/Sent"' '"DESTINATION_PREFIX": "Source/"' '"SYNC_MODE": "mirror"' '"ALLOW_DELETIONS": "true"' '"FOLDER_FILTER": ""' '"FOLDER_FILTER": "INBOX"'; do
   [[ "$multi_compose_config" == *"$entry"* ]] || fail "multi folder override/default lost: $entry"
 done
+[[ "$compose_config" == *'"WEBHOOK_URL": "https://monitor.example.test/single"'* && "$compose_config" == *'"WEBHOOK_FAILURE_THRESHOLD": "4"'* ]] || fail "single webhook overrides lost"
+[[ "$multi_compose_config" == *'"WEBHOOK_URL": "https://monitor.example.test/a"'* && "$multi_compose_config" == *'"WEBHOOK_FAILURE_THRESHOLD": "5"'* ]] || fail "multi webhook overrides lost"
+[[ "$compose_config" == *'"stop_grace_period": "30s"'* && "$multi_compose_config" == *'"stop_grace_period": "30s"'* ]] || fail "shutdown grace period lost"
 echo "ok - Compose configuration contracts"

@@ -3,6 +3,19 @@
 sync_job_state_dir="${SYNC_JOB_STATE_DIR:-/var/lib/imapsync}"
 sync_job_state_cron_pid_file="${SYNC_JOB_STATE_CRON_PID_FILE:-/var/run/mailbox-mirror-cron.pid}"
 
+sync_job_state_is_dry_run() {
+  local dry="${DRY_RUN:-false}" arg
+  local -a extra_args=()
+  read -r -a extra_args <<< "${IMAPSYNC_EXTRA_ARGS:-}"
+  for arg in "${extra_args[@]}"; do
+    case "$arg" in
+      --dry) dry=true ;;
+      --nodry) dry=false ;;
+    esac
+  done
+  [[ "$dry" == true ]]
+}
+
 _sync_job_state_error() {
   echo "$*" >&2
 }
@@ -153,7 +166,7 @@ sync_job_state_check_health() {
   fi
 
   local success_file="${sync_job_state_dir}/last_success_at" success_description="mailbox run"
-  if [[ "${DRY_RUN:-false}" == "true" ]]; then
+  if sync_job_state_is_dry_run; then
     success_file="${sync_job_state_dir}/last_dry_run_at"
     success_description="dry run"
   fi

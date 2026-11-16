@@ -150,7 +150,7 @@ test_runtime_limits() {
   reset_env
   set_required_env
   local option
-  for option in HEALTHCHECK_MAX_RUN_MINUTES RUN_TIMEOUT_SECONDS SHUTDOWN_GRACE_SECONDS; do
+  for option in HEALTHCHECK_MAX_RUN_MINUTES RUN_TIMEOUT_SECONDS SHUTDOWN_GRACE_SECONDS WEBHOOK_FAILURE_THRESHOLD; do
     printf -v "$option" '%s' 0
     if mailbox_mirror_config_load >/dev/null 2>&1; then fail "zero accepted for $option"; fi
     unset "$option"
@@ -160,6 +160,9 @@ test_runtime_limits() {
   LOCK_WAIT_SECONDS=0
   mailbox_mirror_config_load
   unset LOCK_WAIT_SECONDS
+  WEBHOOK_URL=file:///etc/passwd
+  if mailbox_mirror_config_load >/dev/null 2>&1; then fail "non-HTTP webhook accepted"; fi
+  unset WEBHOOK_URL
 }
 
 test_runtime_limits

@@ -34,11 +34,13 @@ chmod 0644 /etc/cron.d/imapsync
 
 touch /var/log/imapsync.log
 
-cron_pid="" tail_pid="" startup_pid="" shutdown_requested=false
+cron_pid="" tail_pid="" startup_pid="" monitor_pid="" shutdown_requested=false
 term() {
   trap '' SIGINT SIGTERM
   log "Stopping container..."
-  [[ -z "$startup_pid" ]] || kill -TERM -- "-$startup_pid" 2>/dev/null || true
+  if [[ -n "$startup_pid" ]]; then
+    kill -TERM -- "-$startup_pid" 2>/dev/null || kill -TERM "$startup_pid" 2>/dev/null || true
+  fi
   # Stop scheduling first, then let the active run terminate its process group
   # and record failure before PID 1 exits.
   [[ -z "$cron_pid" ]] || kill "$cron_pid" 2>/dev/null || true
@@ -59,7 +61,10 @@ term() {
       sleep 1
       remaining=$((remaining - 1))
     done
-    kill -KILL -- "-$startup_pid" 2>/dev/null || true
+    kill -KILL -- "-$startup_pid" 2>/dev/null || kill -KILL "$startup_pid" 2>/dev/null || true
+  fi
+  if [[ -n "$monitor_pid" ]]; then
+    kill -TERM -- "-$monitor_pid" 2>/dev/null || kill -TERM "$monitor_pid" 2>/dev/null || true
   fi
   [[ -z "$tail_pid" ]] || kill "$tail_pid" 2>/dev/null || true
   wait 2>/dev/null || true
@@ -75,6 +80,11 @@ sync_job_state_record_cron_started "$cron_pid"
 tail -F /var/log/imapsync.log &
 tail_pid=$!
 
+if [[ -n "${WEBHOOK_URL:-}" ]]; then
+  setsid /usr/local/bin/mailbox-mirror-monitor &
+  monitor_pid=$!
+fi
+
 if [[ "${RUN_ON_STARTUP:-true}" == "true" ]]; then
   log "Running initial imapsync sync..."
   setsid /usr/local/bin/cron-runner.sh &
@@ -84,7 +94,10 @@ trap term SIGINT SIGTERM
 if [[ "$shutdown_requested" == true ]]; then term; fi
 if [[ -n "$startup_pid" ]]; then
   wait "$startup_pid" || log "Initial sync failed; cron retries based on schedule."
+  startup_pid=""
 fi
 
-wait -n "$cron_pid" "$tail_pid" || true
+children=("$cron_pid" "$tail_pid")
+[[ -z "$monitor_pid" ]] || children+=("$monitor_pid")
+wait -n "${children[@]}" || true
 term

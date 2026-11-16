@@ -129,4 +129,10 @@ assert_unhealthy "Invalid mailbox run status: invalid"
 printf '%s\n' "invalid" > "$SYNC_JOB_STATE_CRON_PID_FILE"
 assert_unhealthy "Invalid cron pid: invalid"
 
+DRY_RUN=false
+IMAPSYNC_EXTRA_ARGS=--dry
+sync_job_state_is_dry_run || fail "legacy dry option not recognized"
+IMAPSYNC_EXTRA_ARGS='--dry --nodry'
+if sync_job_state_is_dry_run; then fail "effective legacy nodry ignored"; fi
+unset IMAPSYNC_EXTRA_ARGS
 echo "ok - sync job state contract"

@@ -35,6 +35,7 @@ docker run --detach \
   --env USER2=destination@example.test \
   --env PASSWORD2=destination-password \
   --env UNRELATED_SECRET=unrelated-fake-value \
+  --env MAX_LOG_SIZE_MB=08 \
   --env RUN_ON_STARTUP=false \
   --env CRON_SCHEDULE=@hourly \
   "$image" >/dev/null

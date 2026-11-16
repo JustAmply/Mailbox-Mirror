@@ -2,6 +2,7 @@ services:
   mailbox-mirror:
     image: ghcr.io/justamply/mailbox-mirror:latest
     restart: unless-stopped
+    stop_grace_period: 30s
     env_file:
       - .env
     environment:

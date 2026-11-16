@@ -53,7 +53,20 @@ wait_for_file() {
   fail "timed out waiting for ${file}"
 }
 
-if [[ "${1:-}" == --startup || "${1:-}" == --startup-early ]]; then
+prepare_delayed_session() {
+  # Hold the child before setsid creates its process group, without creating
+  # descendants that could hide whether the direct-PID fallback worked.
+  cat > /testbin/setsid <<'DELAYED_SESSION'
+#!/usr/bin/env bash
+set -euo pipefail
+echo "$$" > /tmp/mailbox-runtime-test/session_pid
+touch /tmp/mailbox-runtime-test/session_waiting
+exec sleep 120
+DELAYED_SESSION
+  chmod +x /testbin/setsid
+}
+
+if [[ "${1:-}" == --startup || "${1:-}" == --startup-early || "${1:-}" == --startup-before-session ]]; then
   prepare_adapter
   echo hold > /tmp/mailbox-runtime-test/mode
   if [[ "$1" == --startup-early ]]; then
@@ -66,6 +79,9 @@ sleep 120
 exec /usr/local/bin/run-imapsync-real.sh
 DELAYED_RUN
     chmod +x /usr/local/bin/run-imapsync.sh
+  fi
+  if [[ "$1" == --startup-before-session ]]; then
+    prepare_delayed_session
   fi
   exec /usr/local/bin/entrypoint.sh
 fi
@@ -174,6 +190,26 @@ if [[ "${1:-}" == --inside ]]; then
   touch "$fixture/unlock"
   wait "$holder_pid"
   echo 'ok - SIGTERM interrupts a pending shared lock wait'
+
+  reset_case success
+  prepare_delayed_session
+  /usr/local/bin/run-imapsync.sh > "$fixture/run.log" 2>&1 &
+  run_pid=$!
+  wait_for_file "$fixture/session_waiting"
+  session_pid="$(<"$fixture/session_pid")"
+  if kill -0 -- "-$session_pid" 2>/dev/null; then
+    fail 'delayed adapter session already has a process group'
+  fi
+  kill -TERM "$(<"$SYNC_JOB_STATE_DIR/active_pid")"
+  wait_for_file "$SYNC_JOB_STATE_DIR/last_finished_at"
+  exit_code=0
+  wait "$run_pid" || exit_code=$?
+  [[ "$exit_code" == 143 ]] || fail "pre-session interruption must return 143, got ${exit_code}"
+  assert_state last_status failure
+  assert_state last_exit_code 143
+  assert_not_running "$session_pid"
+  [[ ! -f "$fixture/started" ]] || fail 'adapter started after pre-session interruption'
+  echo 'ok - SIGTERM before adapter session creation stops the direct child'
   exit 0
 fi
 
@@ -195,8 +231,9 @@ cleanup() {
     docker logs "${prefix}-checks" >&2 2>/dev/null || true
     docker logs "${prefix}-startup" >&2 2>/dev/null || true
     docker logs "${prefix}-early" >&2 2>/dev/null || true
+    docker logs "${prefix}-before-session" >&2 2>/dev/null || true
   fi
-  docker rm -f "${prefix}-checks" "${prefix}-startup" "${prefix}-early" >/dev/null 2>&1 || true
+  docker rm -f "${prefix}-checks" "${prefix}-startup" "${prefix}-early" "${prefix}-before-session" >/dev/null 2>&1 || true
   rm -rf "$fixture_dir"
 }
 trap cleanup EXIT
@@ -258,3 +295,23 @@ docker stop --time 15 "${prefix}-early" >/dev/null
 docker cp "${prefix}-early:/tmp/mailbox-runtime-test" "$copy_path/early"
 [[ ! -f "$fixture_dir/early/started" ]] || fail 'adapter started after early shutdown'
 echo 'ok - SIGTERM before initial run registration exits cleanly without starting the adapter'
+
+create_test_container "${prefix}-before-session" --startup-before-session
+docker start "${prefix}-before-session" >/dev/null
+started=false
+for _ in {1..40}; do
+  if docker exec "${prefix}-before-session" test -f /tmp/mailbox-runtime-test/session_waiting; then
+    started=true
+    break
+  fi
+  sleep 0.1
+done
+[[ "$started" == true ]] || fail 'delayed session fixture did not start'
+docker exec "${prefix}-before-session" test ! -e /var/lib/imapsync/active_pid \
+  || fail 'pre-session shutdown fixture already registered an active run'
+docker stop --time 15 "${prefix}-before-session" >/dev/null
+[[ "$(docker inspect --format '{{.State.ExitCode}}' "${prefix}-before-session")" == 0 ]] \
+  || fail 'shutdown before session creation did not finish gracefully'
+docker cp "${prefix}-before-session:/tmp/mailbox-runtime-test" "$copy_path/before-session"
+[[ ! -f "$fixture_dir/before-session/started" ]] || fail 'adapter started after pre-session shutdown'
+echo 'ok - SIGTERM before initial session creation exits cleanly without starting the adapter'

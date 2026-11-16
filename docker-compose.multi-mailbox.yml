@@ -3,6 +3,7 @@ services:
     image: ghcr.io/justamply/mailbox-mirror:latest
     container_name: mailbox-mirror-a
     restart: unless-stopped
+    stop_grace_period: 30s
     environment:
       TZ: Europe/Berlin
       HOST1: ${MAILBOX_A_HOST1:-}
@@ -28,6 +29,8 @@ services:
       DESTINATION_PREFIX: ${MAILBOX_A_DESTINATION_PREFIX:-}
       SYNC_MODE: ${MAILBOX_A_SYNC_MODE:-additive}
       ALLOW_DELETIONS: ${MAILBOX_A_ALLOW_DELETIONS:-false}
+      WEBHOOK_URL: ${MAILBOX_A_WEBHOOK_URL:-}
+      WEBHOOK_FAILURE_THRESHOLD: ${MAILBOX_A_WEBHOOK_FAILURE_THRESHOLD:-3}
       HEALTHCHECK_MAX_AGE_MINUTES: ${MAILBOX_A_HEALTHCHECK_MAX_AGE_MINUTES:-}
       HEALTHCHECK_MAX_RUN_MINUTES: ${MAILBOX_A_HEALTHCHECK_MAX_RUN_MINUTES:-}
       RUN_TIMEOUT_SECONDS: ${MAILBOX_A_RUN_TIMEOUT_SECONDS:-}
@@ -46,6 +49,7 @@ services:
     image: ghcr.io/justamply/mailbox-mirror:latest
     container_name: mailbox-mirror-b
     restart: unless-stopped
+    stop_grace_period: 30s
     environment:
       TZ: Europe/Berlin
       HOST1: ${MAILBOX_B_HOST1:-}
@@ -71,6 +75,8 @@ services:
       DESTINATION_PREFIX: ${MAILBOX_B_DESTINATION_PREFIX:-}
       SYNC_MODE: ${MAILBOX_B_SYNC_MODE:-additive}
       ALLOW_DELETIONS: ${MAILBOX_B_ALLOW_DELETIONS:-false}
+      WEBHOOK_URL: ${MAILBOX_B_WEBHOOK_URL:-}
+      WEBHOOK_FAILURE_THRESHOLD: ${MAILBOX_B_WEBHOOK_FAILURE_THRESHOLD:-3}
       HEALTHCHECK_MAX_AGE_MINUTES: ${MAILBOX_B_HEALTHCHECK_MAX_AGE_MINUTES:-}
       HEALTHCHECK_MAX_RUN_MINUTES: ${MAILBOX_B_HEALTHCHECK_MAX_RUN_MINUTES:-}
       RUN_TIMEOUT_SECONDS: ${MAILBOX_B_RUN_TIMEOUT_SECONDS:-}
@@ -89,6 +95,7 @@ services:
     image: ghcr.io/justamply/mailbox-mirror:latest
     container_name: mailbox-mirror-c
     restart: unless-stopped
+    stop_grace_period: 30s
     environment:
       TZ: Europe/Berlin
       HOST1: ${MAILBOX_C_HOST1:-}
@@ -114,6 +121,8 @@ services:
       DESTINATION_PREFIX: ${MAILBOX_C_DESTINATION_PREFIX:-}
       SYNC_MODE: ${MAILBOX_C_SYNC_MODE:-additive}
       ALLOW_DELETIONS: ${MAILBOX_C_ALLOW_DELETIONS:-false}
+      WEBHOOK_URL: ${MAILBOX_C_WEBHOOK_URL:-}
+      WEBHOOK_FAILURE_THRESHOLD: ${MAILBOX_C_WEBHOOK_FAILURE_THRESHOLD:-3}
       HEALTHCHECK_MAX_AGE_MINUTES: ${MAILBOX_C_HEALTHCHECK_MAX_AGE_MINUTES:-}
       HEALTHCHECK_MAX_RUN_MINUTES: ${MAILBOX_C_HEALTHCHECK_MAX_RUN_MINUTES:-}
       RUN_TIMEOUT_SECONDS: ${MAILBOX_C_RUN_TIMEOUT_SECONDS:-}
