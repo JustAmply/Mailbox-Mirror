@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/folder-options.sh"
+
 mailbox_mirror_config_error() {
   if declare -F log >/dev/null; then
     log "$*" >&2
@@ -187,5 +189,6 @@ mailbox_mirror_config_load() {
     mailbox_mirror_config_error "LOCK_WAIT_SECONDS must be a nonnegative integer"
     return 1
   fi
+  mailbox_folder_options_validate || return 1
   mailbox_mirror_config_validate_cron_schedule
 }

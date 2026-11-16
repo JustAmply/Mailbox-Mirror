@@ -36,6 +36,17 @@ MAILBOX_A_LOCK_WAIT_SECONDS=42
 MAILBOX_A_HEALTHCHECK_MAX_AGE_MINUTES=31
 MAILBOX_A_HEALTHCHECK_MAX_RUN_MINUTES=82
 MAILBOX_A_SHUTDOWN_GRACE_SECONDS=11
+FOLDER_INCLUDE=Sent Items
+DESTINATION_PREFIX=Single/
+SYNC_MODE=mirror
+ALLOW_DELETIONS=true
+MAILBOX_A_FOLDER_INCLUDE=Sent Items
+MAILBOX_A_FOLDER_EXCLUDE=^Spam$
+MAILBOX_A_FOLDER_MAP=Sent Items=Archive/Sent
+MAILBOX_A_DESTINATION_PREFIX=Source/
+MAILBOX_A_SYNC_MODE=mirror
+MAILBOX_A_ALLOW_DELETIONS=true
+MAILBOX_A_FOLDER_FILTER=
 MAILBOX_A_AUTHMECH1=LOGIN
 MAILBOX_A_AUTHMECH2=PLAIN
 EOF
@@ -64,5 +75,11 @@ for entry in '"RUN_TIMEOUT_SECONDS": "901"' '"LOCK_WAIT_SECONDS": "41"' '"HEALTH
 done
 for entry in '"RUN_TIMEOUT_SECONDS": "902"' '"LOCK_WAIT_SECONDS": "42"' '"HEALTHCHECK_MAX_AGE_MINUTES": "31"' '"HEALTHCHECK_MAX_RUN_MINUTES": "82"' '"SHUTDOWN_GRACE_SECONDS": "11"'; do
   [[ "$multi_compose_config" == *"$entry"* ]] || fail "multi mailbox override lost: $entry"
+done
+for entry in '"FOLDER_INCLUDE": "Sent Items"' '"DESTINATION_PREFIX": "Single/"' '"SYNC_MODE": "mirror"' '"ALLOW_DELETIONS": "true"'; do
+  [[ "$compose_config" == *"$entry"* ]] || fail "folder override lost: $entry"
+done
+for entry in '"FOLDER_INCLUDE": "Sent Items"' '"FOLDER_EXCLUDE": "^Spam$$"' '"FOLDER_MAP": "Sent Items=Archive/Sent"' '"DESTINATION_PREFIX": "Source/"' '"SYNC_MODE": "mirror"' '"ALLOW_DELETIONS": "true"' '"FOLDER_FILTER": ""' '"FOLDER_FILTER": "INBOX"'; do
+  [[ "$multi_compose_config" == *"$entry"* ]] || fail "multi folder override/default lost: $entry"
 done
 echo "ok - Compose configuration contracts"

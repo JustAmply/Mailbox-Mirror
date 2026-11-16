@@ -12,6 +12,7 @@ COPY docker/run-imapsync.sh /usr/local/bin/run-imapsync.sh
 COPY docker/cron-runner.sh /usr/local/bin/cron-runner.sh
 COPY docker/healthcheck.sh /usr/local/bin/healthcheck.sh
 COPY docker/status.sh /usr/local/bin/mailbox-mirror-status
+COPY docker/folder-options.sh /usr/local/lib/mailbox-mirror/folder-options.sh
 COPY docker/config.sh /usr/local/lib/mailbox-mirror/config.sh
 COPY docker/mailbox-run.sh /usr/local/lib/mailbox-mirror/mailbox-run.sh
 COPY docker/sync-job-state.sh /usr/local/lib/mailbox-mirror/sync-job-state.sh

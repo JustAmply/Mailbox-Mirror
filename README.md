@@ -146,3 +146,45 @@ cache is gone. Existing messages from UID-mode runs are recognized by the normal
 matching rules. Explicit `--useuid` in `IMAPSYNC_EXTRA_ARGS` remains supported but
 requires managing a persistent imapsync cache. No existing duplicate messages are
 automatically removed.
+
+## Folder selection and deletion policy
+
+The default `SYNC_MODE=additive` preserves destination-only messages. It still
+updates flags on matching messages and copies missing messages; it is a one-way
+sync, not an independent immutable backup or bidirectional sync. Source messages
+are not deleted by the built-in modes. Moving a source message copies it into the
+new folder; additive mode retains the previous destination copy.
+
+`SYNC_MODE=mirror` additionally removes destination messages absent from the
+corresponding source folder, and **requires `ALLOW_DELETIONS=true`**. This mode
+uses `--delete2 --expunge2`; it does not delete destination-only folders. Test with
+`DRY_RUN=true` first. Do not use mirror mode when several sources share the same
+destination folders or when destination-only mail must be retained. Take care
+with age/selection filters; review the adapter's dry-run output before enabling
+real deletions. Existing `IMAPSYNC_EXTRA_ARGS` remain authoritative and may enable
+other destructive behavior even in additive mode; this compatibility escape
+hatch is not restricted by `ALLOW_DELETIONS`.
+
+New optional settings accept newline-separated entries (single-quoted multiline
+values in `.env`). Blank lines are ignored; spaces within folder names are kept:
+
+```dotenv
+FOLDER_INCLUDE='INBOX
+Sent Items'
+FOLDER_EXCLUDE='^Trash$
+^Spam$'
+FOLDER_MAP='Sent Items=Archive/Sent'
+DESTINATION_PREFIX=Source/
+```
+
+`FOLDER_INCLUDE` selects exact source folders and combines with the existing
+`FOLDER_FILTER`. `FOLDER_EXCLUDE` contains regular expressions. `FOLDER_MAP` uses
+`source=destination` pairs and does not itself select folders. `DESTINATION_PREFIX`
+is literal text, including the desired separator (for example `/`); it disables
+automatic special-folder mapping so the prefix is applied consistently. Explicit
+`FOLDER_MAP` destinations are complete names and bypass the prefix. Match the
+destination server's folder separator.
+
+The multi-mailbox example exposes the same settings with `MAILBOX_A_` / `B_` /
+`C_`. It retains its `INBOX` filter by default; set `MAILBOX_A_FOLDER_FILTER=`
+explicitly when selecting other folders or all folders.

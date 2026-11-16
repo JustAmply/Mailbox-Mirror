@@ -17,5 +17,6 @@ echo "ok - local credentials ignored"
 
 bash tests/mailbox-run-test.sh
 bash tests/config-test.sh
+bash tests/folder-options-test.sh
 bash tests/sync-job-state-test.sh
 bash tests/compose-config-test.sh

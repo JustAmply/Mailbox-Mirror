@@ -50,6 +50,7 @@ _mailbox_run_build_command() {
   if [[ -n "${FOLDER_FILTER:-}" ]]; then mailbox_run_command_ref+=(--folder "$FOLDER_FILTER"); fi
   if [[ -n "${MAXAGE_DAYS:-}" ]]; then mailbox_run_command_ref+=(--maxage "$MAXAGE_DAYS"); fi
   if _mailbox_run_is_dry_run; then mailbox_run_command_ref+=(--dry); fi
+  mailbox_folder_options_append "$1"
   if [[ -n "${IMAPSYNC_EXTRA_ARGS:-}" ]]; then
     local extra_args
     read -r -a extra_args <<< "${IMAPSYNC_EXTRA_ARGS}"
