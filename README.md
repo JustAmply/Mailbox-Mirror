@@ -93,3 +93,19 @@ To validate the built container lifecycle without connecting to an IMAP server:
 docker build --tag mailbox-mirror:smoke-test .
 bash tests/container-smoke-test.sh
 ```
+
+## Credentials from files
+
+Existing `PASSWORD1` / `PASSWORD2` configurations remain supported. Passwords
+are passed to imapsync through private temporary files instead of command-line
+arguments. The cron environment snapshot is readable only by root and includes
+only runtime settings, not unrelated environment secrets.
+
+For mounted secrets, set `PASSWORD1_FILE` and/or `PASSWORD2_FILE` to a readable
+file **inside the container**. The first line contains the password. A file
+setting takes precedence over the corresponding password variable. Mount your
+secret read-only using a local Compose override (or Compose secrets); the base
+Compose files do not mount host secrets automatically. The multi-mailbox example
+maps `MAILBOX_A_PASSWORD1_FILE` / `MAILBOX_A_PASSWORD2_FILE`, likewise for B/C.
+Never commit the secret files or a populated `.env`. Container administrators
+can still access credentials; secret files do not protect against host root.

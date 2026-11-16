@@ -34,6 +34,7 @@ docker run --detach \
   --env HOST2=imap.destination.test \
   --env USER2=destination@example.test \
   --env PASSWORD2=destination-password \
+  --env UNRELATED_SECRET=unrelated-fake-value \
   --env RUN_ON_STARTUP=false \
   --env CRON_SCHEDULE=@hourly \
   "$image" >/dev/null
@@ -62,6 +63,11 @@ fi
 docker exec "$container_name" \
   grep -Fq '@hourly root /usr/local/bin/cron-runner.sh' /etc/cron.d/imapsync \
   || fail "entrypoint did not install the configured cron schedule"
+
+[[ "$(docker exec "$container_name" stat -c %a /etc/imapsync.env)" == 600 ]] || fail "cron credentials are not private"
+if docker exec "$container_name" grep -q UNRELATED_SECRET /etc/imapsync.env; then
+  fail "unrelated secret copied into cron"
+fi
 
 docker exec "$container_name" mkdir -p /tmp/fake-imapsync-bin
 docker exec "$container_name" ln -s /bin/true /tmp/fake-imapsync-bin/imapsync

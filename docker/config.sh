@@ -17,6 +17,18 @@ mailbox_mirror_config_require() {
   fi
 }
 
+mailbox_mirror_config_snapshot() {
+  local key
+  while IFS= read -r key; do
+    case "$key" in
+      HOST[12]|PORT[12]|USER[12]|PASSWORD[12]|PASSWORD[12]_FILE|SSL[12]|AUTHMECH[12]|IMAPSYNC_*|FOLDER_*|DESTINATION_PREFIX|SYNC_MODE|ALLOW_DELETIONS|CRON_SCHEDULE|RUN_ON_STARTUP|DRY_RUN|LOCK_FILE|LOCK_WAIT_SECONDS|MAXAGE_DAYS|HEALTHCHECK_*|MAX_LOG_SIZE_MB|RUN_TIMEOUT_SECONDS|SHUTDOWN_GRACE_SECONDS|WEBHOOK_URL|WEBHOOK_FAILURE_THRESHOLD|SYNC_JOB_STATE_DIR|SYNC_JOB_STATE_CRON_PID_FILE|TZ|PATH|HOME|TMPDIR)
+        if [[ "$key" == PASSWORD1 && -n "${PASSWORD1_FILE:-}" ]] || [[ "$key" == PASSWORD2 && -n "${PASSWORD2_FILE:-}" ]]; then continue; fi
+        printf 'export %s=%q\n' "$key" "${!key}"
+        ;;
+    esac
+  done < <(compgen -e)
+}
+
 mailbox_mirror_config_validate_bool() {
   local var_name="$1"
   local value="${!var_name:-}"
@@ -144,8 +156,19 @@ mailbox_mirror_config_load() {
   export MAX_LOG_SIZE_MB="${MAX_LOG_SIZE_MB:-10}"
 
   local var_name
-  for var_name in HOST1 USER1 PASSWORD1 HOST2 USER2 PASSWORD2; do
+  for var_name in HOST1 USER1 HOST2 USER2; do
     mailbox_mirror_config_require "$var_name" || return 1
+  done
+  for var_name in PASSWORD1 PASSWORD2; do
+    local file_var="${var_name}_FILE"
+    if [[ -n "${!file_var:-}" ]]; then
+      if [[ ! -r "${!file_var}" || ! -s "${!file_var}" ]]; then
+        mailbox_mirror_config_error "${file_var} must reference a readable, nonempty file"
+        return 1
+      fi
+    else
+      mailbox_mirror_config_require "$var_name" || return 1
+    fi
   done
 
   for var_name in RUN_ON_STARTUP DRY_RUN SSL1 SSL2; do

@@ -19,7 +19,7 @@ assert_equal() {
 }
 
 reset_env() {
-  unset HOST1 USER1 PASSWORD1 HOST2 USER2 PASSWORD2
+  unset HOST1 USER1 PASSWORD1 HOST2 USER2 PASSWORD2 PASSWORD1_FILE PASSWORD2_FILE
   unset PORT1 PORT2 SSL1 SSL2 MAXAGE_DAYS DRY_RUN
   unset CRON_SCHEDULE RUN_ON_STARTUP MAX_LOG_SIZE_MB HEALTHCHECK_MAX_AGE_MINUTES
 }
@@ -130,6 +130,23 @@ test_cron_field_validation() {
   done
 }
 
+test_secret_configuration() {
+  reset_env
+  set_required_env
+  PASSWORD1_FILE=/nonexistent/mailbox-mirror-secret
+  assert_invalid "PASSWORD1_FILE must reference a readable, nonempty file"
+  unset PASSWORD1_FILE
+  export PASSWORD1='fake secret with spaces $ and quotes' UNRELATED_SECRET='not-for-cron'
+  local snapshot
+  snapshot="$(mailbox_mirror_config_snapshot)"
+  [[ "$snapshot" != *UNRELATED_SECRET* ]] || fail "unrelated secrets copied into cron"
+  unset PASSWORD1
+  eval "$snapshot"
+  assert_equal 'fake secret with spaces $ and quotes' "$PASSWORD1" 'snapshot escaping'
+  unset UNRELATED_SECRET
+}
+
+test_secret_configuration
 test_defaults
 test_missing_required_value
 test_invalid_boolean

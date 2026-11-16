@@ -26,6 +26,8 @@ USER2=destination@example.test
 PASSWORD2=destination-password
 RUN_ON_STARTUP=false
 CRON_SCHEDULE=17 3 * * *
+PASSWORD1_FILE=/run/secrets/source_fake
+MAILBOX_A_PASSWORD1_FILE=/run/secrets/mailbox_a_fake
 MAILBOX_A_AUTHMECH1=LOGIN
 MAILBOX_A_AUTHMECH2=PLAIN
 EOF
@@ -47,4 +49,6 @@ multi_compose_config="$(docker compose \
 [[ "$multi_compose_config" == *'"AUTHMECH2": "PLAIN"'* ]] \
   || fail "docker-compose.multi-mailbox.yml must map MAILBOX_A_AUTHMECH2"
 
+[[ "$compose_config" == *'"PASSWORD1_FILE": "/run/secrets/source_fake"'* ]] || fail "single mailbox secret override lost"
+[[ "$multi_compose_config" == *'"PASSWORD1_FILE": "/run/secrets/mailbox_a_fake"'* ]] || fail "multi mailbox secret mapping lost"
 echo "ok - Compose configuration contracts"

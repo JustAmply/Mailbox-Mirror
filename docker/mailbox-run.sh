@@ -23,10 +23,10 @@ _mailbox_run_build_command() {
     imapsync
     --host1 "$HOST1"
     --user1 "$USER1"
-    --password1 "$PASSWORD1"
+    --passfile1 "$mailbox_password_file1"
     --host2 "$HOST2"
     --user2 "$USER2"
-    --password2 "$PASSWORD2"
+    --passfile2 "$mailbox_password_file2"
     --automap
     --syncinternaldates
     --useuid
@@ -52,8 +52,9 @@ _mailbox_run_build_command() {
 mailbox_run_execute() (
   local lock_file="${LOCK_FILE:-/tmp/imapsync.lock}"
   local run_result="failure"
+  local credential_dir=""
 
-  trap 'sync_job_state_record_mailbox_run_finished "$run_result"' EXIT
+  trap 'sync_job_state_record_mailbox_run_finished "$run_result"; [[ -z "$credential_dir" ]] || rm -rf -- "$credential_dir"' EXIT
 
   sync_job_state_record_mailbox_run_started || return
   mailbox_mirror_config_load || return
@@ -69,6 +70,15 @@ mailbox_run_execute() (
   fi
 
   local cmd
+  credential_dir="$(mktemp -d)" || return
+  chmod 700 "$credential_dir"
+  local mailbox_password_file1="${PASSWORD1_FILE:-${credential_dir}/source}" mailbox_password_file2="${PASSWORD2_FILE:-${credential_dir}/destination}"
+  if [[ -z "${PASSWORD1_FILE:-}" ]]; then
+    (umask 077; printf '%s\n' "$PASSWORD1" > "$mailbox_password_file1") || return
+  fi
+  if [[ -z "${PASSWORD2_FILE:-}" ]]; then
+    (umask 077; printf '%s\n' "$PASSWORD2" > "$mailbox_password_file2") || return
+  fi
   _mailbox_run_build_command cmd
 
   if _mailbox_run_is_dry_run; then

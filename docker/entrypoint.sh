@@ -18,11 +18,12 @@ fi
 
 sync_job_state_record_container_started
 
-# Snapshot runtime env so cron jobs can read the same credentials/options.
-: > /etc/imapsync.env
-while IFS='=' read -r key value; do
-  printf 'export %s=%q\n' "$key" "$value" >> /etc/imapsync.env
-done < <(printenv)
+# Cron needs the validated configuration, including credentials. Do not copy
+# unrelated container secrets, and never expose a partially written snapshot.
+umask 077
+mailbox_mirror_config_snapshot > /etc/imapsync.env.tmp
+chmod 600 /etc/imapsync.env.tmp
+mv /etc/imapsync.env.tmp /etc/imapsync.env
 
 cat > /etc/cron.d/imapsync <<EOF
 SHELL=/bin/bash

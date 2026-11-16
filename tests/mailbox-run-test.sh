@@ -28,7 +28,7 @@ assert_equal() {
 reset_run() {
   rm -rf "$SYNC_JOB_STATE_DIR"
   rm -f "${fixture_dir}/imapsync.args" "${fixture_dir}/run.log"
-  unset HOST1 USER1 PASSWORD1 HOST2 USER2 PASSWORD2
+  unset HOST1 USER1 PASSWORD1 HOST2 USER2 PASSWORD2 PASSWORD1_FILE PASSWORD2_FILE
   unset PORT1 PORT2 SSL1 SSL2 AUTHMECH1 AUTHMECH2 FOLDER_FILTER MAXAGE_DAYS
   unset DRY_RUN IMAPSYNC_EXTRA_ARGS CRON_SCHEDULE RUN_ON_STARTUP MAX_LOG_SIZE_MB
   unset HEALTHCHECK_MAX_AGE_MINUTES
@@ -48,7 +48,12 @@ reset_run() {
 mkdir -p "${fixture_dir}/bin"
 printf '%s\n' \
   '#!/usr/bin/env bash' \
-  'printf "%s\n" "$@" > "$FAKE_IMAPSYNC_ARGS"' \
+  'while (( $# )); do' \
+  '  case "$1" in' \
+  '    --passfile1|--passfile2) flag="$1"; shift; [[ -r "$1" ]] || exit 90; printf "%s\n%s\n" "$flag" "$(cat "$1")" ;;' \
+  '    *) printf "%s\n" "$1" ;;' \
+  '  esac; shift' \
+  'done > "$FAKE_IMAPSYNC_ARGS"' \
   'exit "${FAKE_IMAPSYNC_EXIT:-0}"' \
   > "${fixture_dir}/bin/imapsync"
 printf '%s\n' \
@@ -68,7 +73,7 @@ test_successful_mailbox_run() {
   [[ "$(<"${SYNC_JOB_STATE_DIR}/last_success_at")" =~ ^[0-9]+$ ]] \
     || fail "successful run should record its completion time"
   local expected_args
-  expected_args=$'--host1\nimap.source.test\n--user1\nsource@example.test\n--password1\nsource-password\n--host2\nimap.destination.test\n--user2\ndestination@example.test\n--password2\ndestination-password\n--automap\n--syncinternaldates\n--useuid\n--nofoldersizes\n--ssl1\n--ssl2'
+  expected_args=$'--host1\nimap.source.test\n--user1\nsource@example.test\n--passfile1\nsource-password\n--host2\nimap.destination.test\n--user2\ndestination@example.test\n--passfile2\ndestination-password\n--automap\n--syncinternaldates\n--useuid\n--nofoldersizes\n--ssl1\n--ssl2'
   assert_equal "$expected_args" "$(<"$FAKE_IMAPSYNC_ARGS")" "minimal adapter arguments"
   grep -Fq "imapsync finished successfully." "${fixture_dir}/run.log" \
     || fail "successful run should be logged"
@@ -90,7 +95,7 @@ test_optional_configuration_reaches_adapter() {
   mailbox_run_execute > "${fixture_dir}/run.log"
 
   local expected_args
-  expected_args=$'--host1\nimap.source.test\n--user1\nsource@example.test\n--password1\nsource-password\n--host2\nimap.destination.test\n--user2\ndestination@example.test\n--password2\ndestination-password\n--automap\n--syncinternaldates\n--useuid\n--nofoldersizes\n--port1\n1143\n--port2\n2993\n--ssl2\n--authmech1\nLOGIN\n--authmech2\nXOAUTH2\n--folder\nINBOX\n--maxage\n30\n--dry\n--delete2\n--expunge2'
+  expected_args=$'--host1\nimap.source.test\n--user1\nsource@example.test\n--passfile1\nsource-password\n--host2\nimap.destination.test\n--user2\ndestination@example.test\n--passfile2\ndestination-password\n--automap\n--syncinternaldates\n--useuid\n--nofoldersizes\n--port1\n1143\n--port2\n2993\n--ssl2\n--authmech1\nLOGIN\n--authmech2\nXOAUTH2\n--folder\nINBOX\n--maxage\n30\n--dry\n--delete2\n--expunge2'
   assert_equal "$expected_args" "$(<"$FAKE_IMAPSYNC_ARGS")" "optional adapter arguments"
   grep -Fq "Starting imapsync in dry-run mode..." "${fixture_dir}/run.log" \
     || fail "dry run should be logged"
@@ -139,6 +144,21 @@ test_adapter_failure_fails_run() {
   assert_equal "failure" "$(<"${SYNC_JOB_STATE_DIR}/last_status")" "adapter failure status"
 }
 
+test_password_files() {
+  reset_run
+  PASSWORD1_FILE="${fixture_dir}/source-secret"
+  PASSWORD2_FILE="${fixture_dir}/destination-secret"
+  printf '%s\n' 'file-source-fake' > "$PASSWORD1_FILE"
+  printf '%s\n' 'file-destination-fake' > "$PASSWORD2_FILE"
+  export PASSWORD1_FILE PASSWORD2_FILE
+  unset PASSWORD1 PASSWORD2
+  mailbox_run_execute > "${fixture_dir}/run.log"
+  grep -Fxq 'file-source-fake' "$FAKE_IMAPSYNC_ARGS" || fail "source secret not loaded"
+  grep -Fxq 'file-destination-fake' "$FAKE_IMAPSYNC_ARGS" || fail "destination secret not loaded"
+  [[ -f "$PASSWORD1_FILE" && -f "$PASSWORD2_FILE" ]] || fail "external secrets must not be deleted"
+}
+
+test_password_files
 test_successful_mailbox_run
 test_optional_configuration_reaches_adapter
 test_invalid_configuration_fails_run
