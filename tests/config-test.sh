@@ -104,6 +104,32 @@ test_invalid_schedule() {
   assert_equal $'Invalid CRON_SCHEDULE: every minute\nExpected either a cron macro like @hourly or five cron fields.' "$output" "cron error"
 }
 
+test_cron_field_validation() {
+  reset_env
+  set_required_env
+  local schedule
+  for schedule in \
+    '99 * * * *' '* 24 * * *' '* * 0 * *' '* * * 13 *' '* * * * 8' \
+    '*/0 * * * *' '*/-1 * * * *' '*/2/3 * * * *' '5/2 * * * *' \
+    '1, * * * *' ',1 * * * *' '1,,2 * * * *' '8-2 * * * *' \
+    '* * * January *' '* * * * Funday' '999999999999999999999 * * * *' \
+    '*/999999999999999999999 * * * *' '* * * * MON-FRI-SUN'; do
+    CRON_SCHEDULE="$schedule"
+    if mailbox_mirror_config_load >/dev/null 2>&1; then
+      fail "invalid cron schedule accepted: ${schedule}"
+    fi
+  done
+
+  for schedule in \
+    '*/5 * * * *' '0,15,30,45 * * * *' '0-59/7 0-23/2 1-31/3 1-12 0-7' \
+    '08 03 01 01 07' '0 9 * JAN-MAR MON-FRI' '0 9 * jan,jun mon,wed,fri' \
+    '*/60 * * * *' '0-0 * * * *' '0000000001 * * * *' \
+    '@reboot' '@yearly' '@annually' '@monthly' '@weekly' '@daily' '@midnight' '@hourly'; do
+    CRON_SCHEDULE="$schedule"
+    mailbox_mirror_config_load || fail "valid cron schedule rejected: ${schedule}"
+  done
+}
+
 test_defaults
 test_missing_required_value
 test_invalid_boolean
@@ -111,5 +137,6 @@ test_invalid_port
 test_invalid_maxage
 test_leading_zero_integer
 test_invalid_schedule
+test_cron_field_validation
 
 echo "ok - runtime configuration contract"

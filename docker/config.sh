@@ -50,6 +50,60 @@ mailbox_mirror_config_validate_port() {
   fi
 }
 
+_mailbox_mirror_cron_value() {
+  local value="${1,,}" minimum="$2" maximum="$3" names="$4"
+  local name index="$minimum"
+
+  if [[ "$value" =~ ^[0-9]+$ ]]; then
+    value="${value#"${value%%[!0]*}"}"
+    value="${value:-0}"
+    [[ "${#value}" -le 2 ]] || return 1
+    (( value >= minimum && value <= maximum )) || return 1
+    printf '%s\n' "$value"
+    return 0
+  fi
+
+  for name in $names; do
+    if [[ "$value" == "$name" ]]; then
+      printf '%s\n' "$index"
+      return 0
+    fi
+    index=$((index + 1))
+  done
+  return 1
+}
+
+_mailbox_mirror_validate_cron_field() {
+  local field="$1" minimum="$2" maximum="$3" names="$4"
+  local item range step start end
+  local -a items
+
+  [[ "$field" != ,* && "$field" != *, && "$field" != *,,* ]] || return 1
+  IFS=, read -r -a items <<< "$field"
+  for item in "${items[@]}"; do
+    range="$item"
+    if [[ "$item" == */* ]]; then
+      range="${item%%/*}"
+      step="${item#*/}"
+      [[ "$step" =~ ^[0-9]+$ ]] || return 1
+      step="${step#"${step%%[!0]*}"}"
+      [[ -n "$step" && "${#step}" -le 10 ]] || return 1
+      (( step <= 2147483647 )) || return 1
+      # Debian cron permits steps on wildcards and ranges, not single values.
+      [[ "$range" == '*' || "$range" == *-* ]] || return 1
+    fi
+    if [[ "$range" == '*' ]]; then
+      continue
+    elif [[ "$range" == *-* ]]; then
+      start="$(_mailbox_mirror_cron_value "${range%%-*}" "$minimum" "$maximum" "$names")" || return 1
+      end="$(_mailbox_mirror_cron_value "${range#*-}" "$minimum" "$maximum" "$names")" || return 1
+      (( start <= end )) || return 1
+    else
+      _mailbox_mirror_cron_value "$range" "$minimum" "$maximum" "$names" >/dev/null || return 1
+    fi
+  done
+}
+
 mailbox_mirror_config_validate_cron_schedule() {
   local schedule="$CRON_SCHEDULE"
 
@@ -69,6 +123,16 @@ mailbox_mirror_config_validate_cron_schedule() {
     mailbox_mirror_config_error "Expected either a cron macro like @hourly or five cron fields."
     return 1
   fi
+
+  local -a minimums=(0 0 1 1 0) maximums=(59 23 31 12 7)
+  local -a names=('' '' '' 'jan feb mar apr may jun jul aug sep oct nov dec' 'sun mon tue wed thu fri sat')
+  local index
+  for index in "${!parts[@]}"; do
+    if ! _mailbox_mirror_validate_cron_field "${parts[index]}" "${minimums[index]}" "${maximums[index]}" "${names[index]}"; then
+      mailbox_mirror_config_error "Invalid CRON_SCHEDULE field $((index + 1)): ${parts[index]}"
+      return 1
+    fi
+  done
 }
 
 mailbox_mirror_config_load() {
