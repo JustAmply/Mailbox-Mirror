@@ -5,11 +5,13 @@ on:
   push:
     branches:
       - main
+      - "codex/**"
   workflow_dispatch:
 
 jobs:
   docker-build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
       packages: write
@@ -38,6 +40,15 @@ jobs:
 
       - name: Test container lifecycle
         run: bash tests/container-smoke-test.sh mailbox-mirror:smoke-test
+
+      - name: Test timeouts, locking, and graceful shutdown
+        run: bash tests/runtime-container-test.sh mailbox-mirror:smoke-test
+
+      - name: Test webhook monitor lifecycle
+        run: bash tests/webhook-container-test.sh mailbox-mirror:smoke-test
+
+      - name: Test real IMAP synchronization
+        run: bash tests/imap-integration-test.sh mailbox-mirror:smoke-test
 
       - name: Log in to GHCR
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
