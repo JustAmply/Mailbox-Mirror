@@ -28,6 +28,14 @@ RUN_ON_STARTUP=false
 CRON_SCHEDULE=17 3 * * *
 PASSWORD1_FILE=/run/secrets/source_fake
 MAILBOX_A_PASSWORD1_FILE=/run/secrets/mailbox_a_fake
+RUN_TIMEOUT_SECONDS=901
+LOCK_WAIT_SECONDS=41
+HEALTHCHECK_MAX_RUN_MINUTES=81
+MAILBOX_A_RUN_TIMEOUT_SECONDS=902
+MAILBOX_A_LOCK_WAIT_SECONDS=42
+MAILBOX_A_HEALTHCHECK_MAX_AGE_MINUTES=31
+MAILBOX_A_HEALTHCHECK_MAX_RUN_MINUTES=82
+MAILBOX_A_SHUTDOWN_GRACE_SECONDS=11
 MAILBOX_A_AUTHMECH1=LOGIN
 MAILBOX_A_AUTHMECH2=PLAIN
 EOF
@@ -51,4 +59,10 @@ multi_compose_config="$(docker compose \
 
 [[ "$compose_config" == *'"PASSWORD1_FILE": "/run/secrets/source_fake"'* ]] || fail "single mailbox secret override lost"
 [[ "$multi_compose_config" == *'"PASSWORD1_FILE": "/run/secrets/mailbox_a_fake"'* ]] || fail "multi mailbox secret mapping lost"
+for entry in '"RUN_TIMEOUT_SECONDS": "901"' '"LOCK_WAIT_SECONDS": "41"' '"HEALTHCHECK_MAX_RUN_MINUTES": "81"'; do
+  [[ "$compose_config" == *"$entry"* ]] || fail "single mailbox override lost: $entry"
+done
+for entry in '"RUN_TIMEOUT_SECONDS": "902"' '"LOCK_WAIT_SECONDS": "42"' '"HEALTHCHECK_MAX_AGE_MINUTES": "31"' '"HEALTHCHECK_MAX_RUN_MINUTES": "82"' '"SHUTDOWN_GRACE_SECONDS": "11"'; do
+  [[ "$multi_compose_config" == *"$entry"* ]] || fail "multi mailbox override lost: $entry"
+done
 echo "ok - Compose configuration contracts"

@@ -58,8 +58,11 @@ printf '%s\n' \
   > "${fixture_dir}/bin/imapsync"
 printf '%s\n' \
   '#!/usr/bin/env bash' \
+  '[[ "${*: -1}" == 10 ]] && exit 0' \
   'exit "${FAKE_FLOCK_EXIT:-0}"' \
   > "${fixture_dir}/bin/flock"
+printf '%s\n' '#!/usr/bin/env bash' 'exec "$@"' > "${fixture_dir}/bin/setsid"
+chmod +x "${fixture_dir}/bin/setsid"
 chmod +x "${fixture_dir}/bin/imapsync" "${fixture_dir}/bin/flock"
 export PATH="${fixture_dir}/bin:${PATH}"
 export FAKE_IMAPSYNC_ARGS="${fixture_dir}/imapsync.args"
@@ -73,7 +76,7 @@ test_successful_mailbox_run() {
   [[ "$(<"${SYNC_JOB_STATE_DIR}/last_success_at")" =~ ^[0-9]+$ ]] \
     || fail "successful run should record its completion time"
   local expected_args
-  expected_args=$'--host1\nimap.source.test\n--user1\nsource@example.test\n--passfile1\nsource-password\n--host2\nimap.destination.test\n--user2\ndestination@example.test\n--passfile2\ndestination-password\n--automap\n--syncinternaldates\n--useuid\n--nofoldersizes\n--ssl1\n--ssl2'
+  expected_args=$'--host1\nimap.source.test\n--user1\nsource@example.test\n--passfile1\nsource-password\n--host2\nimap.destination.test\n--user2\ndestination@example.test\n--passfile2\ndestination-password\n--automap\n--syncinternaldates\n--nofoldersizes\n--ssl1\n--ssl2'
   assert_equal "$expected_args" "$(<"$FAKE_IMAPSYNC_ARGS")" "minimal adapter arguments"
   grep -Fq "imapsync finished successfully." "${fixture_dir}/run.log" \
     || fail "successful run should be logged"
@@ -95,8 +98,10 @@ test_optional_configuration_reaches_adapter() {
   mailbox_run_execute > "${fixture_dir}/run.log"
 
   local expected_args
-  expected_args=$'--host1\nimap.source.test\n--user1\nsource@example.test\n--passfile1\nsource-password\n--host2\nimap.destination.test\n--user2\ndestination@example.test\n--passfile2\ndestination-password\n--automap\n--syncinternaldates\n--useuid\n--nofoldersizes\n--port1\n1143\n--port2\n2993\n--ssl2\n--authmech1\nLOGIN\n--authmech2\nXOAUTH2\n--folder\nINBOX\n--maxage\n30\n--dry\n--delete2\n--expunge2'
+  expected_args=$'--host1\nimap.source.test\n--user1\nsource@example.test\n--passfile1\nsource-password\n--host2\nimap.destination.test\n--user2\ndestination@example.test\n--passfile2\ndestination-password\n--automap\n--syncinternaldates\n--nofoldersizes\n--port1\n1143\n--port2\n2993\n--ssl2\n--authmech1\nLOGIN\n--authmech2\nXOAUTH2\n--folder\nINBOX\n--maxage\n30\n--dry\n--delete2\n--expunge2'
   assert_equal "$expected_args" "$(<"$FAKE_IMAPSYNC_ARGS")" "optional adapter arguments"
+  [[ "$(<"${SYNC_JOB_STATE_DIR}/last_status")" == dry_run ]] || fail "dry run status missing"
+  [[ ! -f "${SYNC_JOB_STATE_DIR}/last_success_at" ]] || fail "dry run recorded real success"
   grep -Fq "Starting imapsync in dry-run mode..." "${fixture_dir}/run.log" \
     || fail "dry run should be logged"
 }
@@ -158,6 +163,15 @@ test_password_files() {
   [[ -f "$PASSWORD1_FILE" && -f "$PASSWORD2_FILE" ]] || fail "external secrets must not be deleted"
 }
 
+test_legacy_dry_argument() {
+  reset_run
+  IMAPSYNC_EXTRA_ARGS=--dry
+  mailbox_run_execute > "${fixture_dir}/run.log"
+  assert_equal dry_run "$(<"${SYNC_JOB_STATE_DIR}/last_status")" 'legacy dry run'
+  [[ ! -f "${SYNC_JOB_STATE_DIR}/last_success_at" ]] || fail 'legacy dry run recorded success'
+}
+
+test_legacy_dry_argument
 test_password_files
 test_successful_mailbox_run
 test_optional_configuration_reaches_adapter

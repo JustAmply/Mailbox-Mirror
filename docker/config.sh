@@ -180,5 +180,12 @@ mailbox_mirror_config_load() {
   mailbox_mirror_config_validate_positive_int MAXAGE_DAYS || return 1
   mailbox_mirror_config_validate_positive_int MAX_LOG_SIZE_MB || return 1
   mailbox_mirror_config_validate_positive_int HEALTHCHECK_MAX_AGE_MINUTES || return 1
+  for var_name in HEALTHCHECK_MAX_RUN_MINUTES RUN_TIMEOUT_SECONDS SHUTDOWN_GRACE_SECONDS; do
+    mailbox_mirror_config_validate_positive_int "$var_name" || return 1
+  done
+  if [[ -n "${LOCK_WAIT_SECONDS:-}" && ! "$LOCK_WAIT_SECONDS" =~ ^[0-9]+$ ]]; then
+    mailbox_mirror_config_error "LOCK_WAIT_SECONDS must be a nonnegative integer"
+    return 1
+  fi
   mailbox_mirror_config_validate_cron_schedule
 }

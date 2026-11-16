@@ -11,7 +11,7 @@ max_log_size_mb="$MAX_LOG_SIZE_MB"
 
 if [[ -f "$log_file" ]]; then
   current_size_bytes=$(wc -c < "$log_file")
-  max_size_bytes=$((max_log_size_mb * 1024 * 1024))
+  max_size_bytes=$((10#$max_log_size_mb * 1024 * 1024))
   if (( current_size_bytes >= max_size_bytes )); then
     mv "$log_file" "${log_file}.1"
   fi

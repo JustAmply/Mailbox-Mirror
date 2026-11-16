@@ -68,11 +68,57 @@ assert_unhealthy "Last mailbox run failed"
 sync_job_state_record_mailbox_run_finished success
 assert_equal "success" "$(<"${SYNC_JOB_STATE_DIR}/last_status")" "success status"
 assert_file_matches "${SYNC_JOB_STATE_DIR}/last_success_at" '^[0-9]+$'
+assert_equal "0" "$(<"${SYNC_JOB_STATE_DIR}/consecutive_failures")" "success resets failures"
+assert_equal "0" "$(<"${SYNC_JOB_STATE_DIR}/consecutive_skips")" "success resets skips"
+
+sync_job_state_record_mailbox_run_finished failure 23
+sync_job_state_record_mailbox_run_finished failure 24
+sync_job_state_record_mailbox_run_finished skipped
+assert_equal "2" "$(<"${SYNC_JOB_STATE_DIR}/consecutive_failures")" "skips must not hide repeated failures"
+assert_equal "1" "$(<"${SYNC_JOB_STATE_DIR}/consecutive_skips")" "skipped count"
+
+sync_job_state_record_mailbox_run_started
+printf '%s\n' "$(( $(date +%s) - 120 ))" > "${SYNC_JOB_STATE_DIR}/last_attempt_at"
+HEALTHCHECK_MAX_RUN_MINUTES=1
+assert_unhealthy "Active mailbox run is older than 1 minute(s)"
+unset HEALTHCHECK_MAX_RUN_MINUTES
+sync_job_state_check_health
+printf '%s\n' '99999999' > "${SYNC_JOB_STATE_DIR}/active_pid"
+assert_unhealthy "Active mailbox run process is not running"
+sync_job_state_record_mailbox_run_finished success 0 7
+[[ ! -e "${SYNC_JOB_STATE_DIR}/active_pid" ]] || fail "finished run retained active PID"
+assert_equal "7" "$(<"${SYNC_JOB_STATE_DIR}/last_messages_transferred")" "transferred messages"
+(( $(<"${SYNC_JOB_STATE_DIR}/last_duration_seconds") >= 120 )) || fail "duration not recorded"
+
+status_json="$(SYNC_JOB_STATE_DIR="$SYNC_JOB_STATE_DIR" bash "$(dirname "${BASH_SOURCE[0]}")/../docker/status.sh")"
+printf '%s\n' "$status_json" | perl -MJSON::PP -0777 -e '
+  my $status = decode_json(<>);
+  die "incorrect JSON status" unless $status->{last_status} eq "success"
+    && $status->{last_messages_transferred} == 7 && $status->{last_exit_code} == 0
+    && !defined($status->{active_pid}) && !exists($status->{PASSWORD1});
+'
+
+last_real_success="$(<"${SYNC_JOB_STATE_DIR}/last_success_at")"
+sync_job_state_record_mailbox_run_finished dry_run
+assert_equal "$last_real_success" "$(<"${SYNC_JOB_STATE_DIR}/last_success_at")" "dry run must not update real success"
+[[ ! -e "${SYNC_JOB_STATE_DIR}/last_messages_transferred" ]] || fail "unknown count retained old value"
+assert_file_matches "${SYNC_JOB_STATE_DIR}/last_dry_run_at" '^[0-9]+$'
 
 HEALTHCHECK_MAX_AGE_MINUTES=1
 sync_job_state_check_health
 printf '%s\n' "$(( $(date +%s) - 120 ))" > "${SYNC_JOB_STATE_DIR}/last_success_at"
 assert_unhealthy "Last successful mailbox run is older than 1 minute(s)"
+
+DRY_RUN=true
+sync_job_state_check_health
+printf '%s\n' "$(( $(date +%s) - 120 ))" > "${SYNC_JOB_STATE_DIR}/last_dry_run_at"
+assert_unhealthy "Last successful dry run is older than 1 minute(s)"
+DRY_RUN=false
+
+rm "${SYNC_JOB_STATE_DIR}/last_success_at"
+sync_job_state_check_health
+printf '%s\n' "$(( $(date +%s) - 120 ))" > "${SYNC_JOB_STATE_DIR}/container_started_at"
+assert_unhealthy "No successful mailbox run recorded yet"
 
 printf '%s\n' "invalid" > "${SYNC_JOB_STATE_DIR}/last_success_at"
 assert_unhealthy "Invalid mailbox run timestamp: invalid"

@@ -109,3 +109,40 @@ Compose files do not mount host secrets automatically. The multi-mailbox example
 maps `MAILBOX_A_PASSWORD1_FILE` / `MAILBOX_A_PASSWORD2_FILE`, likewise for B/C.
 Never commit the secret files or a populated `.env`. Container administrators
 can still access credentials; secret files do not protect against host root.
+
+## Run health, time limits, and status
+
+Existing schedules and optional freshness limits remain unchanged. For a five-minute
+schedule, consider `HEALTHCHECK_MAX_AGE_MINUTES=30` to detect missing progress and
+`HEALTHCHECK_MAX_RUN_MINUTES=60` to detect stuck runs. Choose limits that allow the
+initial mailbox copy to finish. The freshness limit provides one interval of grace
+on first container startup. An actual failed run is unhealthy immediately. Successful
+dry runs update a separate timestamp and never count as actual synchronization;
+in `DRY_RUN=true` health checks assess the dry-run timestamp instead.
+
+`RUN_TIMEOUT_SECONDS` optionally terminates an overlong run (exit 124, or 137 after
+forced termination). The default has no total runtime limit. `SHUTDOWN_GRACE_SECONDS`
+(default 10) gives the adapter time to stop before forced termination. Set Compose
+`stop_grace_period` longer than this value plus five seconds if you increase it.
+Shutdown also handles an initial sync that is still running.
+
+`LOCK_WAIT_SECONDS` (default 0) lets a mailbox wait for the shared lock rather than
+immediately skip. Only one active/waiting run per mailbox is allowed; overlapping
+scheduled attempts cannot overwrite its state. Waiting is bounded and does not
+guarantee FIFO ordering. Combine a wait with freshness monitoring to detect
+starvation. In the multi-mailbox example use the corresponding `MAILBOX_A_`,
+`MAILBOX_B_`, or `MAILBOX_C_` setting, including freshness and runtime limits.
+
+Run `docker compose exec mailbox-mirror mailbox-mirror-status` to get JSON containing
+last status, real/dry success timestamps, duration, exit code, failure and skip
+counts, and transferred-message count when the adapter reports it. Missing metrics
+are `null`, not zero. Status is local to the container unless you mount its state
+directory `/var/lib/imapsync`; use a separate state volume for each mailbox. The
+shared lock volume is not a shared state directory.
+
+The adapter now uses normal message identification instead of forcing UID-only
+matching. This prevents duplicates after container recreation when the old UID
+cache is gone. Existing messages from UID-mode runs are recognized by the normal
+matching rules. Explicit `--useuid` in `IMAPSYNC_EXTRA_ARGS` remains supported but
+requires managing a persistent imapsync cache. No existing duplicate messages are
+automatically removed.
